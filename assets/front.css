@@ -1,0 +1,168 @@
+/*
+ * Postful default reading styles. Optional (Postful → Settings).
+ * Everything is scoped under .postful and kept low-specificity so the theme's
+ * own rules win. Colours derive from the theme's text colour.
+ */
+
+.postful [hidden] { display: none !important; }
+
+.postful {
+	--pf-rule: rgba(127, 127, 127, .25);
+	--pf-tint: rgba(127, 127, 127, .08);
+	--pf-tint-2: rgba(127, 127, 127, .15);
+}
+
+/* ---- Entry ------------------------------------------------------------- */
+
+.pf-current { max-width: 68ch; transition: opacity .2s ease; }
+.pf-current.is-loading { opacity: .4; }
+
+.pf-entry .pf-date {
+	margin: 0 0 .6em;
+	font-size: .78em;
+	font-weight: 600;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+	opacity: .6;
+}
+.pf-entry h2.pf-field {
+	margin: 0 0 .9em;
+	font-size: clamp(1.6em, 4vw, 2.2em);
+	line-height: 1.18;
+	letter-spacing: -.01em;
+}
+.pf-entry .pf-field { margin: 0 0 1.2em; }
+.pf-entry .pf-field--richtext { line-height: 1.75; }
+.pf-entry .pf-field--richtext p { margin: 0 0 1.1em; }
+.pf-entry .pf-field img { max-width: 100%; height: auto; border-radius: 6px; }
+
+/* Devotional preset fields */
+.pf-entry .sp-field-verse_text {
+	margin-bottom: .35em;
+	padding-left: 1.1em;
+	border-left: 3px solid var(--pf-rule);
+	font-size: 1.12em;
+	font-style: italic;
+	line-height: 1.6;
+}
+.pf-entry .sp-field-verse_reference {
+	margin: 0 0 2em 1.35em;
+	font-size: .8em;
+	font-weight: 600;
+	letter-spacing: .08em;
+	text-transform: uppercase;
+	opacity: .65;
+}
+.pf-entry .sp-field-scripture_reading {
+	margin-top: 2em;
+	padding-top: 1em;
+	border-top: 1px solid var(--pf-rule);
+	font-size: .95em;
+	opacity: .85;
+}
+
+.postful .pf-message { margin: 0; font-style: italic; opacity: .7; }
+
+/* ---- Previous / next ---------------------------------------------------- */
+
+.pf-nav {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: .5em;
+	max-width: 68ch;
+	margin: 2.2em 0;
+}
+.pf-nav .pf-nav-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: .4em;
+	margin: 0;
+	padding: .55em 1.15em;
+	border: 1px solid var(--pf-rule);
+	border-radius: 999px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	font-size: .9em;
+	line-height: 1.2;
+	cursor: pointer;
+	transition: border-color .15s, background .15s;
+}
+.pf-nav .pf-nav-btn:hover { border-color: currentColor; background: transparent; color: inherit; }
+.pf-nav .pf-nav-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.pf-nav .pf-nav-today { border-color: transparent; opacity: .75; }
+.pf-nav .pf-nav-today:hover { border-color: var(--pf-rule); opacity: 1; }
+
+/* ---- Index -------------------------------------------------------------- */
+
+.pf-index { max-width: 68ch; margin: 2.5em 0; }
+.pf-index .pf-index-title { margin: 0 0 .7em; font-size: 1.15em; }
+.pf-index .pf-month { border-top: 1px solid var(--pf-rule); }
+.pf-index .pf-month:last-of-type { border-bottom: 1px solid var(--pf-rule); }
+.pf-index summary {
+	display: flex;
+	align-items: center;
+	gap: .8em;
+	padding: .85em .2em;
+	font-weight: 600;
+	cursor: pointer;
+	list-style: none;
+}
+.pf-index summary::-webkit-details-marker { display: none; }
+.pf-index summary::after {
+	content: "";
+	width: .45em;
+	height: .45em;
+	margin-right: .3em;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	opacity: .55;
+	transform: rotate(45deg) translateY(-2px);
+	transition: transform .2s;
+}
+.pf-index details[open] > summary::after { transform: rotate(-135deg) translateY(-1px); }
+.pf-index .pf-month-name { flex: 1; text-transform: capitalize; }
+.pf-index .pf-month-count { font-size: .8em; font-weight: 400; opacity: .5; font-variant-numeric: tabular-nums; }
+
+.pf-index .pf-days { margin: 0 0 .9em; padding: 0; list-style: none; }
+.pf-index .pf-days li { margin: 0; padding: 0; }
+.pf-index .pf-day {
+	display: flex;
+	align-items: baseline;
+	gap: 1em;
+	width: 100%;
+	margin: 0;
+	padding: .5em .7em;
+	border: 0;
+	border-radius: 8px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	line-height: 1.4;
+	text-align: left;
+	cursor: pointer;
+}
+.pf-index .pf-day:hover { background: var(--pf-tint); color: inherit; }
+.pf-index .pf-day:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
+.pf-index .pf-day.is-current { background: var(--pf-tint-2); font-weight: 600; }
+.pf-index .pf-day-num { min-width: 2ch; font-variant-numeric: tabular-nums; text-align: right; opacity: .55; }
+.pf-index .pf-day-label {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+.pf-index .pf-day-text { flex: 1; }
+
+.postful-notice { padding: .8em 1em; border: 1px dashed currentColor; opacity: .8; font-size: .9em; }
+
+@media (prefers-reduced-motion: reduce) {
+	.pf-current, .pf-index summary::after { transition: none; }
+}
+
+/* Block themes set tight gaps between blocks; give the reader room. */
+.postful.pf-nav { margin-top: 2.4em; margin-bottom: 2.4em; }
+.postful.pf-index { margin-top: 3em; }

@@ -1,0 +1,19 @@
+/* Postful — typography inside the rich text editor (TinyMCE iframe). */
+body.mce-content-body {
+	margin: 14px 16px;
+	color: #1d1c1a;
+	font-family: "Iowan Old Style", "Charter", "Bitstream Charter", "Palatino Linotype", Palatino, Georgia, serif;
+	font-size: 17px;
+	line-height: 1.65;
+}
+body.mce-content-body p { margin: 0 0 .9em; }
+body.mce-content-body h3 { margin: 1.2em 0 .4em; font-size: 1.2em; font-weight: 600; }
+body.mce-content-body h4 { margin: 1.1em 0 .3em; font-size: 1em; font-weight: 600; }
+body.mce-content-body blockquote {
+	margin: 1em 0;
+	padding: 0 0 0 16px;
+	border-left: 2px solid #dcd8d0;
+	color: #3d3b37;
+	font-style: italic;
+}
+body.mce-content-body a { color: #1f7a57; }

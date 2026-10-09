@@ -1,0 +1,48 @@
+=== Postful ===
+Contributors: poctrl
+Tags: devotional, multilingual, custom post type, daily, bilingual
+Requires at least: 6.3
+Tested up to: 6.9
+Requires PHP: 8.1
+Stable tag: 0.1.0
+License: GPL-2.0-or-later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
+Structured, multilingual content types — like a bilingual daily devotional — set up in a minute and written side by side.
+
+== Description ==
+
+Postful lets you create a content type (for example "Devotionals") with its own fields and languages through a short setup wizard. No separate post type, custom fields or translation plugins needed.
+
+* **Recurring day** structure: one entry per calendar day, repeating every year. Visitors see today's.
+* Every language lives in the same entry and is edited side by side, field by field.
+* One page, one address: visitors browse by month or previous/next without the URL changing, so a daily email can always link to the same page.
+* Follows the language your site is already showing (GTranslate, browser language). It never sets a language itself.
+* CSV import and export, re-runnable: add French to English-only entries in a second pass.
+
+More structures (dated entries, sequences, evergreen pages, events) are coming.
+
+== Installation ==
+
+1. Upload the `postful` folder to `/wp-content/plugins/` or install the zip from Plugins → Add New → Upload.
+2. Activate, then go to Postful → Add content type.
+3. Put the shortcodes on a page: `[sp_current type="devotional"]`, `[sp_nav type="devotional"]`, `[sp_index type="devotional"]`.
+
+== Frequently Asked Questions ==
+
+= Which day is "today"? =
+
+The site's timezone, under Settings → General.
+
+= My page shows yesterday's entry =
+
+If a page cache serves an old copy, Postful fixes the entry in the visitor's browser. It is still best to set your cache to expire that page daily, at midnight in the site's timezone.
+
+= Does deactivating delete my entries? =
+
+No. Entries are only deleted if you switch on Postful → Settings → "Delete data on uninstall" and then delete the plugin.
+
+== Changelog ==
+
+= 0.1.0 =
+* First release: setup wizard, Recurring day structure, side-by-side multilingual editor, shortcodes with in-place navigation, GTranslate-aware language display, CSV import/export, type JSON import/export.
