@@ -169,17 +169,20 @@
 		return article.outerHTML;
 	}
 
-	function swap( targets, html, scroll ) {
+	/** @param {{html:string, aside:string}} res */
+	function swap( targets, res, scroll ) {
 		targets.forEach( function ( t ) {
-			t.innerHTML = html;
+			var part = t.getAttribute( 'data-pf-part' );
+			t.innerHTML = part === 'aside' ? ( res.aside || '' ) : ( part === 'main' ? res.html : ( res.all || res.html ) );
 			t.classList.remove( 'is-loading' );
 			t.removeAttribute( 'aria-busy' );
 		} );
 		applyLanguage();
-		if ( scroll && targets[ 0 ] ) {
-			var rect = targets[ 0 ].getBoundingClientRect();
+		var main = targets.filter( function ( t ) { return t.getAttribute( 'data-pf-part' ) !== 'aside'; } )[ 0 ];
+		if ( scroll && main ) {
+			var rect = main.getBoundingClientRect();
 			if ( rect.top < 0 || rect.top > window.innerHeight * 0.6 ) {
-				targets[ 0 ].scrollIntoView( { behavior: 'smooth', block: 'start' } );
+				main.scrollIntoView( { behavior: 'smooth', block: 'start' } );
 			}
 		}
 	}
@@ -209,7 +212,8 @@
 			t.setAttribute( 'aria-busy', 'true' );
 		} );
 		var url = state.d.rest + ( state.d.rest.indexOf( '?' ) === -1 ? '?' : '&' ) +
-			'type=' + encodeURIComponent( state.d.type ) + '&sort=' + sort;
+			'type=' + encodeURIComponent( state.d.type ) + '&sort=' + sort +
+			( targets.some( function ( t ) { return t.hasAttribute( 'data-pf-part' ); } ) ? '&split=1' : '' );
 
 		fetch( url, { headers: { Accept: 'application/json' } } )
 			.then( function ( r ) {
@@ -219,14 +223,14 @@
 				return r.json();
 			} )
 			.then( function ( json ) {
-				state.cache[ sort ] = json.html;
+				state.cache[ sort ] = json;
 				if ( req === state.req ) {
-					swap( targets, json.html, ! auto );
+					swap( targets, json, ! auto );
 				}
 			} )
 			.catch( function () {
 				if ( req === state.req ) {
-					swap( targets, errorHtml( state ), ! auto );
+					swap( targets, { html: errorHtml( state ), aside: '' }, ! auto );
 				}
 			} );
 	}

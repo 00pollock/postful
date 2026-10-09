@@ -20,7 +20,6 @@ final class Types {
 			'singular'     => '',
 			'preset'       => 'recurring_day',
 			'icon'         => 'dashicons-book-alt',
-			'position'     => 25,
 			'slug'         => '',
 			'public_urls'  => false,
 			'languages'    => [ 'en_US' ],
@@ -29,7 +28,160 @@ final class Types {
 			'fields'       => [],
 			'template'     => '',
 			'strings'      => [],
+			'layout'       => 'sidebar_right',
+			'nav_place'    => 'sidebar',
+			'index_place'  => 'sidebar',
+			'style'        => [],
 		];
+	}
+
+	/**
+	 * Style panel controls, grouped. Each maps to a CSS custom property read by
+	 * front.css; an empty value means "use the theme / default".
+	 * kind: size (px), number (unitless), color (hex), or an options array.
+	 */
+	public static function style_controls(): array {
+		$size  = 'size';
+		$color = 'color';
+		return [
+			'page'      => [ __( 'Page', 'postful' ), [
+				'width'       => [ __( 'Maximum width', 'postful' ), $size, '--pf-width' ],
+				'gap'         => [ __( 'Space between columns', 'postful' ), $size, '--pf-gap' ],
+				'aside_width' => [ __( 'Sidebar width', 'postful' ), $size, '--pf-aside-width' ],
+				'text_size'   => [ __( 'Text size', 'postful' ), $size, '--pf-text-size' ],
+				'text_color'  => [ __( 'Text colour', 'postful' ), $color, '--pf-text' ],
+				'accent'      => [ __( 'Link colour', 'postful' ), $color, '--pf-accent' ],
+			] ],
+			'title'     => [ __( 'Title', 'postful' ), [
+				'title_size'   => [ __( 'Size', 'postful' ), $size, '--pf-title-size' ],
+				'title_weight' => [ __( 'Weight', 'postful' ), [ '400' => __( 'Regular', 'postful' ), '500' => __( 'Medium', 'postful' ), '600' => __( 'Semibold', 'postful' ), '700' => __( 'Bold', 'postful' ) ], '--pf-title-weight' ],
+				'title_color'  => [ __( 'Colour', 'postful' ), $color, '--pf-title-color' ],
+			] ],
+			'date'      => [ __( 'Day', 'postful' ), [
+				'date_size'  => [ __( 'Size', 'postful' ), $size, '--pf-date-size' ],
+				'date_style' => [ __( 'Style', 'postful' ), [ 'italic' => __( 'Italic', 'postful' ), 'normal' => __( 'Upright', 'postful' ) ], '--pf-date-style' ],
+				'date_color' => [ __( 'Colour', 'postful' ), $color, '--pf-date-color' ],
+			] ],
+			'highlight' => [ __( 'Highlight fields', 'postful' ), [
+				'hl_size'  => [ __( 'Size', 'postful' ), $size, '--pf-hl-size' ],
+				'hl_style' => [ __( 'Style', 'postful' ), [ 'italic' => __( 'Italic', 'postful' ), 'normal' => __( 'Upright', 'postful' ) ], '--pf-hl-style' ],
+				'hl_align' => [ __( 'Alignment', 'postful' ), [ 'center' => __( 'Centre', 'postful' ), 'left' => __( 'Left', 'postful' ) ], '--pf-hl-align' ],
+			] ],
+			'label'     => [ __( 'Label fields', 'postful' ), [
+				'label_size'  => [ __( 'Size', 'postful' ), $size, '--pf-label-size' ],
+				'label_case'  => [ __( 'Letters', 'postful' ), [ 'uppercase' => __( 'CAPITALS', 'postful' ), 'none' => __( 'As typed', 'postful' ) ], '--pf-label-case' ],
+				'label_align' => [ __( 'Alignment', 'postful' ), [ 'center' => __( 'Centre', 'postful' ), 'left' => __( 'Left', 'postful' ) ], '--pf-label-align' ],
+			] ],
+			'body'      => [ __( 'Body fields', 'postful' ), [
+				'body_size' => [ __( 'Size', 'postful' ), $size, '--pf-body-size' ],
+				'body_line' => [ __( 'Line spacing', 'postful' ), 'number', '--pf-body-line' ],
+			] ],
+			'spacing'   => [ __( 'Entry spacing', 'postful' ), [
+				'field_gap' => [ __( 'Space between fields', 'postful' ), $size, '--pf-field-gap' ],
+				'entry_pad' => [ __( 'Inner padding', 'postful' ), $size, '--pf-entry-pad' ],
+				'entry_bg'  => [ __( 'Background', 'postful' ), $color, '--pf-entry-bg' ],
+			] ],
+			'sidebar'   => [ __( 'Sidebar', 'postful' ), [
+				'aside_pad' => [ __( 'Inner padding', 'postful' ), $size, '--pf-aside-pad' ],
+				'aside_bg'  => [ __( 'Background', 'postful' ), $color, '--pf-aside-bg' ],
+			] ],
+			'nav'       => [ __( 'Previous / Today / Next', 'postful' ), [
+				'nav_size'  => [ __( 'Size', 'postful' ), $size, '--pf-nav-size' ],
+				'nav_color' => [ __( 'Colour', 'postful' ), $color, '--pf-nav-color' ],
+				'nav_align' => [ __( 'Alignment', 'postful' ), [ 'center' => __( 'Centre', 'postful' ), 'space-between' => __( 'Spread', 'postful' ), 'flex-start' => __( 'Left', 'postful' ) ], '--pf-nav-align' ],
+			] ],
+			'index'     => [ __( 'Month list', 'postful' ), [
+				'month_size' => [ __( 'Month size', 'postful' ), $size, '--pf-month-size' ],
+				'day_size'   => [ __( 'Day size', 'postful' ), $size, '--pf-day-size' ],
+				'index_line' => [ __( 'Border colour', 'postful' ), $color, '--pf-index-line' ],
+			] ],
+		];
+	}
+
+	public static function sanitize_style( $in ): array {
+		$out = [];
+		foreach ( self::style_controls() as [ , $controls ] ) {
+			foreach ( $controls as $key => [ , $kind ] ) {
+				$v = trim( (string) ( is_array( $in ) ? ( $in[ $key ] ?? '' ) : '' ) );
+				if ( '' === $v ) {
+					continue;
+				}
+				if ( 'size' === $kind && is_numeric( $v ) && $v >= 0 && $v <= 2000 ) {
+					$out[ $key ] = (string) ( 0 + $v );
+				} elseif ( 'number' === $kind && is_numeric( $v ) && $v > 0 && $v <= 5 ) {
+					$out[ $key ] = (string) ( 0 + $v );
+				} elseif ( 'color' === $kind && sanitize_hex_color( $v ) ) {
+					$out[ $key ] = sanitize_hex_color( $v );
+				} elseif ( is_array( $kind ) && isset( $kind[ $v ] ) ) {
+					$out[ $key ] = $v;
+				}
+			}
+		}
+		return $out;
+	}
+
+	/** Inline custom properties for a type's front-end wrappers. */
+	public static function style_vars( array $type ): string {
+		$css = '';
+		foreach ( self::style_controls() as [ , $controls ] ) {
+			foreach ( $controls as $key => [ , $kind, $var ] ) {
+				if ( isset( $type['style'][ $key ] ) ) {
+					$css .= $var . ':' . $type['style'][ $key ] . ( 'size' === $kind ? 'px' : '' ) . ';';
+				}
+			}
+		}
+		return $css;
+	}
+
+	public static function has_sidebar( string $layout ): bool {
+		return in_array( $layout, [ 'sidebar_right', 'sidebar_left' ], true );
+	}
+
+	/** Where previous/next and the month list can go. */
+	public static function places(): array {
+		return [
+			'nav'   => [ 'above' => __( 'Above entry', 'postful' ), 'below' => __( 'Below entry', 'postful' ), 'sidebar' => __( 'Sidebar', 'postful' ) ],
+			'index' => [ 'below' => __( 'Below entry', 'postful' ), 'sidebar' => __( 'Sidebar', 'postful' ), 'hidden' => __( 'Hidden', 'postful' ) ],
+		];
+	}
+
+	/** Devotionals → Devotional, Stories → Story, Classes → Class. Editable in the wizard. */
+	public static function singular_of( string $plural ): string {
+		$w = trim( $plural );
+		foreach ( [ '/ies$/i' => 'y', '/(ss|x|ch|sh|zz)es$/i' => '$1', '/([^s])s$/i' => '$1' ] as $re => $to ) {
+			if ( preg_match( $re, $w ) ) {
+				return preg_replace( $re, $to, $w );
+			}
+		}
+		return $w;
+	}
+
+	public static function layouts(): array {
+		return [
+			'sidebar_right' => [ __( 'Sidebar right', 'postful' ), __( 'Entry on the left; previous/next and the month list beside it.', 'postful' ) ],
+			'sidebar_left'  => [ __( 'Sidebar left', 'postful' ), __( 'The same, with navigation on the left.', 'postful' ) ],
+			'stacked'       => [ __( 'Stacked', 'postful' ), __( 'Entry, then previous/next, then the month list below. Suits narrow themes.', 'postful' ) ],
+			'entry_only'    => [ __( 'Entry only', 'postful' ), __( 'Just the current entry with small previous/next links.', 'postful' ) ],
+		];
+	}
+
+	/** How a field is presented on the page. */
+	public static function display_styles(): array {
+		return [
+			'title'     => __( 'Title', 'postful' ),
+			'highlight' => __( 'Highlight', 'postful' ),
+			'label'     => __( 'Label', 'postful' ),
+			'body'      => __( 'Body', 'postful' ),
+			'plain'     => __( 'Plain', 'postful' ),
+		];
+	}
+
+	/** Sensible style for a field type when none was chosen. */
+	public static function default_display( string $field_type, bool $first_text ): string {
+		if ( 'text' === $field_type && $first_text ) {
+			return 'title';
+		}
+		return in_array( $field_type, [ 'richtext', 'textarea' ], true ) ? 'body' : 'plain';
 	}
 
 	/** @return array<string,array> keyed by type key */
@@ -98,7 +250,23 @@ final class Types {
 	}
 
 	/** The field that feeds post_title: the first single-line field. */
+	/** The field shown as the entry's heading: styled Title (explicitly or by default). */
+	public static function header_field( array $type ): ?array {
+		foreach ( $type['fields'] as $field ) {
+			if ( 'title' === ( $field['display'] ?? '' ) ) {
+				return $field;
+			}
+		}
+		return null;
+	}
+
+	/** The field that feeds post_title: a Title-styled field, else the first single line. */
 	public static function title_field( array $type ): ?array {
+		foreach ( $type['fields'] as $field ) {
+			if ( 'title' === ( $field['display'] ?? '' ) && 'text' === $field['type'] ) {
+				return $field;
+			}
+		}
 		foreach ( $type['fields'] as $field ) {
 			if ( 'text' === $field['type'] ) {
 				return $field;
@@ -140,11 +308,10 @@ final class Types {
 				'exclude_from_search' => ! $public,
 				'has_archive'         => $public,
 				'show_ui'             => true,
-				'show_in_menu'        => true,
+				'show_in_menu'        => 'postful', // Entries live inside the Postful menu.
 				'show_in_nav_menus'   => $public,
 				'show_in_rest'        => false,
 				'menu_icon'           => $type['icon'] ?: 'dashicons-book-alt',
-				'menu_position'       => (int) $type['position'],
 				'supports'            => [ 'revisions' ],
 				'rewrite'             => $public ? [ 'slug' => $type['slug'] ?: $key, 'with_front' => false ] : false,
 				'query_var'           => $public,
@@ -197,10 +364,20 @@ final class Types {
 	public static function sanitize( array $in, ?array $existing = null ) {
 		$out = self::defaults();
 
+		// Crafted input (key[]=x, or "layout": [] in JSON) must not reach string functions.
+		foreach ( [ 'plural', 'singular', 'key', 'preset', 'icon', 'slug', 'template', 'default_locale', 'fallback', 'layout', 'nav_place', 'index_place' ] as $text_key ) {
+			if ( isset( $in[ $text_key ] ) && ! is_string( $in[ $text_key ] ) ) {
+				$in[ $text_key ] = '';
+			}
+		}
+
 		$out['plural']   = sanitize_text_field( $in['plural'] ?? '' );
 		$out['singular'] = sanitize_text_field( $in['singular'] ?? '' );
-		if ( '' === $out['plural'] || '' === $out['singular'] ) {
-			return new \WP_Error( 'name', __( 'Give the content type a plural and a singular name.', 'postful' ) );
+		if ( '' === $out['singular'] ) {
+			$out['singular'] = self::singular_of( $out['plural'] );
+		}
+		if ( '' === $out['plural'] ) {
+			return new \WP_Error( 'name', __( 'Give the content type a name.', 'postful' ) );
 		}
 
 		if ( $existing ) {
@@ -229,7 +406,6 @@ final class Types {
 		$out['preset'] = $existing ? $existing['preset'] : $preset->id();
 
 		$out['icon']        = preg_match( '/^dashicons-[a-z0-9-]+$/', (string) ( $in['icon'] ?? '' ) ) ? $in['icon'] : 'dashicons-book-alt';
-		$out['position']    = max( 2, min( 100, (int) ( $in['position'] ?? 25 ) ) );
 		$out['slug']        = sanitize_title( $in['slug'] ?? '' );
 		$out['public_urls'] = ! empty( $in['public_urls'] );
 
@@ -270,6 +446,11 @@ final class Types {
 		$out['fields'] = $fields;
 
 		$out['template'] = wp_kses_post( (string) ( $in['template'] ?? '' ) );
+		$str                = fn( $v ) => is_string( $v ) ? $v : '';
+		$out['layout']      = isset( self::layouts()[ $str( $in['layout'] ?? '' ) ] ) ? $in['layout'] : 'sidebar_right';
+		$out['nav_place']   = isset( self::places()['nav'][ $str( $in['nav_place'] ?? '' ) ] ) ? $in['nav_place'] : 'sidebar';
+		$out['index_place'] = isset( self::places()['index'][ $str( $in['index_place'] ?? '' ) ] ) ? $in['index_place'] : 'sidebar';
+		$out['style']       = self::sanitize_style( $in['style'] ?? [] );
 
 		foreach ( array_keys( $codes ) as $code ) {
 			foreach ( array_keys( Languages::string_keys() ) as $skey ) {
@@ -290,7 +471,8 @@ final class Types {
 		foreach ( $existing['fields'] ?? [] as $field ) {
 			$saved[ $field['key'] ] = $field;
 		}
-		$reserved = [ 'month', 'day', 'status', 'id', 'title', 'sort', 'type', 'lang' ];
+		// CSV key/status columns. ("title" is fine: it's the usual first field.)
+		$reserved = [ 'month', 'day', 'status', 'id', 'sort', 'type', 'lang' ];
 		$types    = Fields::types();
 		$out      = [];
 		$seen     = [];
@@ -318,7 +500,8 @@ final class Types {
 			}
 			$seen[ $key ] = true;
 
-			$type = isset( $types[ $row['type'] ?? '' ] ) ? $row['type'] : 'text';
+			$row  = array_map( fn( $v ) => is_scalar( $v ) || is_array( $v ) ? $v : '', $row );
+			$type = is_string( $row['type'] ?? null ) && isset( $types[ $row['type'] ] ) ? $row['type'] : 'text';
 			$translatable = 'toggle' !== $type && ! empty( $row['translatable'] );
 			if ( isset( $saved[ $key ] ) ) {
 				$translatable = ! empty( $saved[ $key ]['translatable'] );
@@ -333,13 +516,22 @@ final class Types {
 				$choices = array_values( array_filter( array_map( 'sanitize_text_field', $raw ), 'strlen' ) );
 			}
 
+			$display = is_string( $row['display'] ?? null ) && isset( self::display_styles()[ $row['display'] ] )
+				? $row['display']
+				: self::default_display( $type, ! array_filter( $out, fn( $f ) => 'text' === $f['type'] ) );
+
 			$out[] = [
 				'key'          => $key,
 				'label'        => $label,
 				'type'         => $type,
+				'display'      => $display,
+				// Sidebar layouts only; the title always stays in the main area.
+				'region'       => ( $row['region'] ?? '' ) === 'sidebar' && 'title' !== $display ? 'sidebar' : 'main',
 				'required'     => ! empty( $row['required'] ),
 				'help'         => sanitize_text_field( $row['help'] ?? '' ),
 				'translatable' => $translatable,
+				// Included in "Translate from …" drafts. Off for e.g. Bible verses.
+				'machine'      => $translatable && in_array( $type, [ 'text', 'textarea', 'richtext' ], true ) && ! empty( $row['machine'] ),
 				'choices'      => $choices,
 			];
 		}

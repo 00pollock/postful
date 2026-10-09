@@ -16,6 +16,7 @@ final class Shortcodes {
 	private static array $used = [];
 
 	public static function hooks(): void {
+		add_shortcode( 'postful', [ self::class, 'layout' ] );
 		add_shortcode( 'sp_current', [ self::class, 'current' ] );
 		add_shortcode( 'sp_index', [ self::class, 'index' ] );
 		add_shortcode( 'sp_nav', [ self::class, 'nav' ] );
@@ -29,7 +30,7 @@ final class Shortcodes {
 
 		// Load styles in <head> when we can tell the page uses a shortcode, to avoid a flash.
 		$post = get_post();
-		if ( is_singular() && $post && preg_match( '/\[sp_(current|index|nav)\b/', $post->post_content ) ) {
+		if ( is_singular() && $post && preg_match( '/\[(postful|sp_current|sp_index|sp_nav)\b/', $post->post_content ) ) {
 			self::enqueue();
 		}
 	}
@@ -60,13 +61,20 @@ final class Shortcodes {
 
 	private static function open( array $type, string $role, string $tag = 'div', string $extra = '' ): string {
 		return sprintf(
-			'<%1$s class="postful pf-%2$s notranslate" translate="no" data-pf-type="%3$s" data-pf-role="%2$s" data-pf-lang="%4$s"%5$s>',
+			'<%1$s class="postful pf-%2$s notranslate" translate="no" data-pf-type="%3$s" data-pf-role="%2$s" data-pf-lang="%4$s"%5$s%6$s>',
 			$tag,
 			esc_attr( $role ),
 			esc_attr( $type['key'] ),
 			esc_attr( $type['default_lang'] ),
-			$extra
+			$extra,
+			self::style_attr( $type )
 		);
+	}
+
+	/** The type's Style panel settings as CSS custom properties. */
+	private static function style_attr( array $type ): string {
+		$vars = Types::style_vars( $type );
+		return $vars ? ' style="' . esc_attr( $vars ) . '"' : '';
 	}
 
 	/** Remember the type; output happens in the footer (see print_data). */
@@ -114,17 +122,71 @@ final class Shortcodes {
 		);
 	}
 
+	/**
+	 * [postful type="…" layout="…"] — the whole reading experience in one
+	 * shortcode, arranged by the type's layout (overridable per page).
+	 */
+	public static function layout( $atts ): string {
+		$atts = shortcode_atts( [ 'type' => '', 'layout' => '' ], $atts, 'postful' );
+		$type = self::type( [ 'type' => $atts['type'] ], 'postful' );
+		if ( ! is_array( $type ) ) {
+			return $type;
+		}
+		$layout = isset( Types::layouts()[ $atts['layout'] ] ) ? $atts['layout'] : $type['layout'];
+		$args   = [ 'type' => $type['key'] ];
+		$side   = Types::has_sidebar( $layout );
+		$nav    = 'sidebar' === $type['nav_place'] && ! $side ? 'below' : $type['nav_place'];
+		$index  = 'sidebar' === $type['index_place'] && ! $side ? 'below' : $type['index_place'];
+		if ( 'entry_only' === $layout ) {
+			$index = 'hidden';
+		}
+		$compact = 'entry_only' === $layout || 'sidebar' === $nav;
+		$nav_html = self::nav( $args + ( $compact ? [ 'style' => 'compact' ] : [] ) );
+
+		$main  = 'above' === $nav ? $nav_html : '';
+		$main .= self::current( $args + [ 'part' => $side ? 'main' : 'all' ] );
+		$main .= 'below' === $nav ? $nav_html : '';
+		$main .= 'below' === $index ? self::index( $args ) : '';
+
+		if ( ! $side ) {
+			$inner = $main;
+		} else {
+			$aside  = self::current( $args + [ 'part' => 'aside' ] );
+			$aside .= 'sidebar' === $nav ? $nav_html : '';
+			$aside .= 'sidebar' === $index ? self::index( $args ) : '';
+			$inner  = '<div class="pf-layout-main">' . $main . '</div><aside class="pf-layout-aside">' . $aside . '</aside>';
+		}
+		// alignwide: block themes give two-column layouts their wide width, not the narrow text column.
+		return sprintf(
+			'<div class="postful-layout pf-layout--%s%s"%s>%s</div>',
+			esc_attr( str_replace( '_', '-', $layout ) ),
+			$side ? ' alignwide' : '',
+			self::style_attr( $type ),
+			$inner
+		);
+	}
+
 	public static function current( $atts ): string {
 		$type = self::type( $atts, 'sp_current' );
 		if ( ! is_array( $type ) ) {
 			return $type;
 		}
+		$part   = in_array( $atts['part'] ?? '', [ 'main', 'aside' ], true ) ? $atts['part'] : 'all';
 		$preset = Presets::get( $type['preset'] );
 		$sort   = (int) $preset->current_sort();
 		$id     = Index::find( $type['key'], $sort );
-		$inner  = $id ? Renderer::entry( $type, $id ) : Renderer::empty_state( $type, $preset->key_from_sort( $sort ) );
-
-		return self::open( $type, 'current', 'div', ' aria-live="polite"' ) . $inner . '</div>' . self::data( $type );
+		if ( 'aside' === $part ) {
+			$inner = $id ? Renderer::entry( $type, $id, 'aside' ) : '';
+		} else {
+			$inner = $id ? Renderer::entry( $type, $id, $part ) : Renderer::empty_state( $type, $preset->key_from_sort( $sort ) );
+		}
+		// data-pf-part tells front.js which half of a split entry this container shows.
+		$extra = ' aria-live="polite"' . ( 'all' !== $part ? ' data-pf-part="' . esc_attr( $part ) . '"' : '' );
+		$open  = self::open( $type, 'current', 'div', $extra );
+		if ( 'aside' === $part ) {
+			$open = str_replace( 'class="postful pf-current ', 'class="postful pf-current pf-current--aside ', $open );
+		}
+		return $open . $inner . '</div>' . self::data( $type );
 	}
 
 	public static function index( $atts ): string {
@@ -181,16 +243,20 @@ final class Shortcodes {
 	}
 
 	public static function nav( $atts ): string {
-		$type = self::type( $atts, 'sp_nav' );
+		$compact = 'compact' === ( $atts['style'] ?? '' );
+		$type    = self::type( $atts, 'sp_nav' );
 		if ( ! is_array( $type ) ) {
 			return $type;
 		}
 		$label = fn( $k ) => Renderer::per_lang( $type, fn( $c ) => esc_html( Languages::strings( $type, $c )[ $k ] ) );
 
 		$out  = self::open( $type, 'nav', 'nav', ' aria-label="' . esc_attr( $type['plural'] ) . '"' );
-		$out .= '<button type="button" class="pf-nav-btn pf-nav-prev" data-pf-go="prev"><span aria-hidden="true">&larr;</span> ' . $label( 'prev' ) . '</button>';
+		if ( $compact ) {
+			$out = str_replace( 'class="postful pf-nav ', 'class="postful pf-nav pf-nav--compact ', $out );
+		}
+		$out .= '<button type="button" class="pf-nav-btn pf-nav-prev" data-pf-go="prev">' . $label( 'prev' ) . '</button>';
 		$out .= '<button type="button" class="pf-nav-btn pf-nav-today" data-pf-go="today">' . $label( 'today' ) . '</button>';
-		$out .= '<button type="button" class="pf-nav-btn pf-nav-next" data-pf-go="next">' . $label( 'next' ) . ' <span aria-hidden="true">&rarr;</span></button>';
+		$out .= '<button type="button" class="pf-nav-btn pf-nav-next" data-pf-go="next">' . $label( 'next' ) . '</button>';
 		return $out . '</nav>' . self::data( $type );
 	}
 }

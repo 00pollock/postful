@@ -22,6 +22,7 @@ final class Plugin {
 			Editor::hooks();
 			List_Screen::hooks();
 			Importer::hooks();
+			Translator::hooks();
 		}
 	}
 

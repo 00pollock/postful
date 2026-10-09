@@ -34,22 +34,30 @@ final class Renderer {
 		return $out;
 	}
 
-	public static function entry( array $type, int $post_id ): string {
+	/**
+	 * @param string $part 'all', or 'main' / 'aside' when a sidebar layout splits
+	 *                     the entry (fields placed in the sidebar go to 'aside').
+	 */
+	public static function entry( array $type, int $post_id, string $part = 'all' ): string {
 		$preset  = Presets::get( $type['preset'] );
 		$key     = $preset->key_of( $post_id );
 		$locales = Types::locales( $type );
+		$filled  = false;
 
-		$out = sprintf( '<article class="pf-entry" data-pf-id="%d" data-pf-sort="%d">', $post_id, $key ? $preset->sort_of( $key ) : 0 );
+		$out = sprintf( '<article class="pf-entry%s" data-pf-id="%d" data-pf-sort="%d">', 'aside' === $part ? ' pf-entry--aside' : '', $post_id, $key ? $preset->sort_of( $key ) : 0 );
 		foreach ( Types::lang_codes( $type ) as $code ) {
 			$out .= self::lang_open( $type, $code );
 			if ( 'hide' === $type['fallback'] && ! self::complete( $type, $post_id, $code ) ) {
-				$out .= self::message( $type, $code, 'empty', $key );
+				$out .= 'aside' === $part ? '' : self::message( $type, $code, 'empty', $key );
 			} else {
-				$out .= self::body( $type, $post_id, $code, $locales[ $code ] ?? $code, $key );
+				$body    = self::body( $type, $post_id, $code, $locales[ $code ] ?? $code, $key, $part );
+				$filled  = $filled || '' !== $body;
+				$out    .= $body;
 			}
 			$out .= '</div>';
 		}
-		return $out . '</article>';
+		// An empty sidebar part renders nothing rather than an empty box.
+		return 'aside' === $part && ! $filled ? '' : $out . '</article>';
 	}
 
 	/** Placeholder article in every language — never a blank box. */
@@ -71,43 +79,80 @@ final class Renderer {
 		return $out . '<p class="pf-message">' . esc_html( Languages::strings( $type, $code )[ $string_key ] ) . '</p>';
 	}
 
-	/** Value for display, falling back to the default language per field. */
+	/**
+	 * Value shown to visitors. A machine draft awaiting review counts as empty,
+	 * then the default language fills the gap per field (fallback "field").
+	 */
 	public static function display_value( array $type, int $post_id, array $field, string $code ): string {
-		$value = Fields::value( $post_id, $field, $code );
-		if ( ! empty( $field['translatable'] ) && 'field' === $type['fallback'] && Fields::is_empty( $field, $value ) && $code !== $type['default_lang'] ) {
+		$translated = ! empty( $field['translatable'] ) && $code !== $type['default_lang'];
+		$value      = $translated && Translator::is_machine( $post_id, $code, $field['key'] ) ? '' : Fields::value( $post_id, $field, $code );
+		if ( $translated && 'field' === $type['fallback'] && Fields::is_empty( $field, $value ) ) {
 			$value = Fields::value( $post_id, $field, $type['default_lang'] );
 		}
 		return $value;
 	}
 
-	private static function body( array $type, int $post_id, string $code, string $locale, ?array $key ): string {
-		$preset     = Presets::get( $type['preset'] );
-		$date       = $key ? esc_html( $preset->key_label( $key, $code, $locale ) ) : '';
-		$title      = Types::title_field( $type );
-		$title_key  = $title['key'] ?? '';
-		$parts      = [];
+	private static function body( array $type, int $post_id, string $code, string $locale, ?array $key, string $part = 'all' ): string {
+		$preset = Presets::get( $type['preset'] );
+		$date   = $key ? esc_html( $preset->key_label( $key, $code, $locale ) ) : '';
+		$title  = Types::header_field( $type );
+		$parts  = [];
 
 		foreach ( $type['fields'] as $field ) {
 			$value = self::display_value( $type, $post_id, $field, $code );
 			$html  = Fields::is_empty( $field, $value ) ? '' : Fields::format( $field, $value, $code, $locale );
-			$parts[ $field['key'] ] = [ $field, $value, $html ];
+			$parts[ $field['key'] ] = [ $field, $html ];
 		}
 
+		// A custom template controls the whole entry, so nothing is split out.
 		if ( '' !== trim( $type['template'] ) ) {
+			if ( 'aside' === $part ) {
+				return '';
+			}
 			$map = [ '{date}' => $date ];
-			foreach ( $parts as $fkey => [ , , $html ] ) {
+			foreach ( $parts as $fkey => [ , $html ] ) {
 				$map[ '{' . $fkey . '}' ] = $html;
 			}
 			return strtr( $type['template'], $map );
 		}
 
-		$out = $date ? '<p class="pf-date">' . $date . '</p>' : '';
-		foreach ( $parts as $fkey => [ $field, $value, $html ] ) {
-			if ( 'toggle' === $field['type'] || '' === $html ) {
+		$in_part = function ( array $field ) use ( $part ): bool {
+			$aside = 'sidebar' === ( $field['region'] ?? 'main' );
+			return 'all' === $part || ( 'aside' === $part ) === $aside;
+		};
+
+		// Header: the title on the left, the entry's day on the right.
+		$head = '';
+		if ( 'aside' === $part ) {
+			$title = null;
+			$date  = '';
+		}
+		if ( $title && '' !== $parts[ $title['key'] ][1] ) {
+			$head .= sprintf( '<h2 class="pf-entry-title sp-field-%s">%s</h2>', esc_attr( $title['key'] ), $parts[ $title['key'] ][1] );
+		}
+		if ( $date ) {
+			$head .= '<p class="pf-date">' . $date . '</p>';
+		}
+		$out = $head ? '<header class="pf-entry-head">' . $head . '</header>' : '';
+
+		foreach ( $parts as $fkey => [ $field, $html ] ) {
+			if ( 'toggle' === $field['type'] || '' === $html || ( $title && $fkey === $title['key'] ) || ! $in_part( $field ) ) {
 				continue;
 			}
-			$tag   = $fkey === $title_key ? 'h2' : 'div';
-			$out  .= sprintf( '<%1$s class="pf-field pf-field--%2$s sp-field-%3$s">%4$s</%1$s>', $tag, esc_attr( $field['type'] ), esc_attr( $fkey ), $html );
+			$style = $field['display'] ?? Types::default_display( $field['type'], false );
+			$tag   = match ( $style ) {
+				'highlight' => 'blockquote',
+				'title'     => 'h3',
+				default     => 'div',
+			};
+			$out .= sprintf(
+				'<%1$s class="pf-field pf-style-%2$s pf-field--%3$s sp-field-%4$s">%5$s</%1$s>',
+				$tag,
+				esc_attr( $style ),
+				esc_attr( $field['type'] ),
+				esc_attr( $fkey ),
+				$html
+			);
 		}
 		return $out;
 	}
@@ -116,16 +161,18 @@ final class Renderer {
 	 * A translation is complete when every translated field that has content in
 	 * the default language also has content in this one.
 	 */
-	public static function complete( array $type, int $post_id, string $code ): bool {
+	public static function complete( array $type, int $post_id, string $code, bool $for_visitors = true ): bool {
 		if ( $code === $type['default_lang'] ) {
 			return true;
 		}
+		$machine = $for_visitors ? Translator::machine_keys( $post_id, $code ) : [];
 		foreach ( $type['fields'] as $field ) {
 			if ( empty( $field['translatable'] ) ) {
 				continue;
 			}
 			$default = Fields::value( $post_id, $field, $type['default_lang'] );
-			if ( ! Fields::is_empty( $field, $default ) && Fields::is_empty( $field, Fields::value( $post_id, $field, $code ) ) ) {
+			$value = in_array( $field['key'], $machine, true ) ? '' : Fields::value( $post_id, $field, $code );
+			if ( ! Fields::is_empty( $field, $default ) && Fields::is_empty( $field, $value ) ) {
 				return false;
 			}
 		}

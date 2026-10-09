@@ -20,6 +20,19 @@ final class Editor {
 		add_filter( 'mce_css', [ self::class, 'mce_css' ] );
 		add_filter( 'post_updated_messages', [ self::class, 'messages' ] );
 		add_action( 'admin_notices', [ self::class, 'key_error_notice' ] );
+		add_filter( 'parent_file', [ self::class, 'parent_file' ] );
+		add_filter( 'submenu_file', [ self::class, 'submenu_file' ] );
+	}
+
+	/** Keep the Postful menu open while editing or listing entries. */
+	public static function parent_file( $file ) {
+		$screen = get_current_screen();
+		return $screen && Types::get( $screen->post_type ) ? 'postful' : $file;
+	}
+
+	public static function submenu_file( $file ) {
+		$screen = get_current_screen();
+		return $screen && Types::get( $screen->post_type ) && in_array( $screen->base, [ 'post', 'edit' ], true ) ? 'edit.php?post_type=' . $screen->post_type : $file;
 	}
 
 	/** An invalid day never wipes the saved one; say why it wasn't changed. */
@@ -86,9 +99,19 @@ final class Editor {
 
 		global $wp_locale;
 		wp_localize_script( 'postful-editor', 'postfulEditor', [
-			'taken'  => $taken,
-			'months' => array_values( $wp_locale->month ),
-			'i18n'   => [
+			'taken'     => $taken,
+			'months'    => array_values( $wp_locale->month ),
+			'ajax'      => admin_url( 'admin-ajax.php' ),
+			'postId'    => $post ? $post->ID : 0,
+			'nonce'     => $post ? wp_create_nonce( 'postful_translate_' . $post->ID ) : '',
+			'defLang'   => $type['default_lang'],
+			'machine'   => array_column( Translator::machine_fields( $type ), 'key' ),
+			'i18n'      => [
+				'translating' => __( 'Translating…', 'postful' ),
+				/* translators: %d: number of fields */
+				'filled'      => __( 'Filled %d empty fields. Review them, then tick Reviewed.', 'postful' ),
+				'nothing'     => __( 'Nothing to translate: the fields are already filled, or the source is empty.', 'postful' ),
+				'failed'      => __( 'Translation failed.', 'postful' ),
 				/* translators: %s: title of the other entry */
 				'dup'         => __( 'Another entry already uses this day: “%s”. Only one will be shown.', 'postful' ),
 				'monthDay'    => _x( '%1$s %2$d', 'month name, day number', 'postful' ),
@@ -174,6 +197,22 @@ final class Editor {
 									<span class="pf-lang-tag"><?php esc_html_e( 'Default', 'postful' ); ?></span>
 								<?php endif; ?>
 								<span class="pf-lang-progress" data-pf-progress></span>
+								<?php if ( Translator::can_translate( $type, $code ) ) : ?>
+									<button type="button" class="pf-btn pf-btn--soft pf-btn--sm" data-pf-translate="<?php echo esc_attr( $code ); ?>">
+										<?php
+										/* translators: %s: default language name */
+										echo esc_html( sprintf( __( 'Translate from %s', 'postful' ), Languages::name( $locales[ $type['default_lang'] ] ) ) );
+										?>
+									</button>
+								<?php endif; ?>
+								<?php if ( $code !== $type['default_lang'] ) : ?>
+									<?php $pending = Translator::needs_review( $post->ID, $code ); ?>
+									<div class="pf-review" data-pf-review="<?php echo esc_attr( $code ); ?>" <?php echo $pending ? '' : 'hidden'; ?>>
+										<input type="hidden" name="pf_review[<?php echo esc_attr( $code ); ?>]" value="" data-pf-review-flag>
+										<span class="pf-review-text"><?php esc_html_e( 'Some fields are machine drafts. Visitors see the default language for those until they’re reviewed.', 'postful' ); ?></span>
+										<label class="pf-review-check"><input type="checkbox" name="pf_reviewed[<?php echo esc_attr( $code ); ?>]" value="1"> <?php esc_html_e( 'Reviewed', 'postful' ); ?></label>
+									</div>
+								<?php endif; ?>
 							</div>
 						<?php endif; ?>
 						<?php
@@ -257,6 +296,25 @@ final class Editor {
 				}
 			}
 		}
+		// Machine-draft review state per language. Ticking "Reviewed" wins.
+		$review   = isset( $_POST['pf_review'] ) && is_array( $_POST['pf_review'] ) ? wp_unslash( $_POST['pf_review'] ) : []; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- reduced to known field keys below
+		$reviewed = isset( $_POST['pf_reviewed'] ) && is_array( $_POST['pf_reviewed'] ) ? wp_unslash( $_POST['pf_reviewed'] ) : []; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- compared to '1' only
+		foreach ( Types::lang_codes( $type ) as $code ) {
+			if ( $code === $type['default_lang'] ) {
+				continue;
+			}
+			if ( '1' === ( $reviewed[ $code ] ?? '' ) ) {
+				Translator::clear_machine( $post_id, $code );
+			} else {
+				// Comma-separated keys of fields the Translate button just filled.
+				$keys = array_intersect(
+					array_map( 'sanitize_key', explode( ',', (string) ( $review[ $code ] ?? '' ) ) ),
+					array_column( Translator::machine_fields( $type ), 'key' )
+				);
+				Translator::add_machine( $post_id, $code, $keys );
+			}
+		}
+
 		Index::flush( $type['key'] );
 	}
 

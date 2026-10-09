@@ -35,6 +35,11 @@ final class Rest {
 					'type'    => 'integer',
 					'minimum' => 0,
 				],
+				// The page splits sidebar fields into their own container.
+				'split' => [
+					'type'    => 'boolean',
+					'default' => false,
+				],
 			],
 		] );
 	}
@@ -64,12 +69,16 @@ final class Rest {
 				$id = Index::find( $type['key'], $sort );
 			}
 
+			$split    = (bool) $request['split'];
 			$response = rest_ensure_response( [
-				'sort' => $sort,
-				'id'   => $id,
-				'html' => $id ? Renderer::entry( $type, $id ) : Renderer::empty_state( $type, $key ),
+				'sort'  => $sort,
+				'id'    => $id,
+				'html'  => $id ? Renderer::entry( $type, $id, $split ? 'main' : 'all' ) : Renderer::empty_state( $type, $key ),
+				'aside' => $id && $split ? Renderer::entry( $type, $id, 'aside' ) : '',
+				// For a standalone [sp_current] sharing the page with a split layout.
+				'all'   => $id && $split ? Renderer::entry( $type, $id, 'all' ) : '',
 			] );
-			$response->header( 'Cache-Control', 'public, max-age=300' );
+			$response->header( 'Cache-Control', 'public, max-age=60' );
 			return $response;
 		} catch ( \Throwable $e ) {
 			return new \WP_Error( 'postful_error', 'Could not load entry.', [ 'status' => 500 ] );

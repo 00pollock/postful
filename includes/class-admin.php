@@ -10,7 +10,9 @@ defined( 'ABSPATH' ) || exit;
 final class Admin {
 
 	public static function hooks(): void {
-		add_action( 'admin_menu', [ self::class, 'menus' ] );
+		// Order: Content types (9) → each type's entries (core, 10) → Add / Settings (11).
+		add_action( 'admin_menu', [ self::class, 'menus' ], 9 );
+		add_action( 'admin_menu', [ self::class, 'menus_after' ], 11 );
 		add_action( 'admin_enqueue_scripts', [ self::class, 'assets' ] );
 		add_action( 'admin_post_postful_save_type', [ self::class, 'save_type' ] );
 		add_action( 'admin_post_postful_delete_type', [ self::class, 'delete_type' ] );
@@ -25,8 +27,12 @@ final class Admin {
 	}
 
 	public static function menus(): void {
-		add_menu_page( 'Postful', 'Postful', 'manage_options', 'postful', [ self::class, 'types_page' ], Plugin::menu_icon(), 80 );
+		// edit_posts so editors reach their entries; type setup pages still need manage_options.
+		add_menu_page( 'Postful', 'Postful', Types::all() ? 'edit_posts' : 'manage_options', 'postful', [ self::class, 'types_page' ], Plugin::menu_icon(), 26 );
 		add_submenu_page( 'postful', __( 'Content types', 'postful' ), __( 'Content types', 'postful' ), 'manage_options', 'postful', [ self::class, 'types_page' ] );
+	}
+
+	public static function menus_after(): void {
 		add_submenu_page( 'postful', __( 'Add content type', 'postful' ), __( 'Add content type', 'postful' ), 'manage_options', 'postful-type', [ self::class, 'wizard_page' ] );
 		add_submenu_page( 'postful', __( 'Settings', 'postful' ), __( 'Settings', 'postful' ), 'manage_options', 'postful-settings', [ Settings::class, 'render_page' ] );
 	}
@@ -44,9 +50,15 @@ final class Admin {
 				'removeLocked'  => __( "Remove this field?\n\nEntries already have content saved under this field. It stays in the database but will no longer be shown or editable. To rename a key, remove the field and add a new one.", 'postful' ),
 				'deleteType'    => __( "Delete this content type?\n\nIts entries are NOT deleted. They stay in the database and come back if you recreate a type with the same internal key.", 'postful' ),
 				'needLanguage'  => __( 'Choose at least one language.', 'postful' ),
-				'needName'      => __( 'Give it a plural and a singular name.', 'postful' ),
+				'needName'      => __( 'Give it a name.', 'postful' ),
 				'needField'     => __( 'Add at least one field.', 'postful' ),
 				'fileChosen'    => __( 'Ready to import: %s', 'postful' ),
+				'main'          => __( 'Main', 'postful' ),
+				'sidebar'       => __( 'Sidebar', 'postful' ),
+				/* translators: 1: entries done, 2: total */
+				'bulkProgress'  => __( '%1$d of %2$d translated…', 'postful' ),
+				'bulkDone'      => __( 'Done. The drafts are marked “Needs review” in the list and stay hidden from visitors until reviewed.', 'postful' ),
+				'bulkStuck'     => __( 'Stopped: some entries could not be translated. Check them in the editor.', 'postful' ),
 			],
 		] );
 	}
@@ -100,7 +112,6 @@ final class Admin {
 
 			<?php if ( ! $types ) : ?>
 				<div class="pf-empty">
-					<div class="pf-empty-art" aria-hidden="true"><?php echo Presets::get( 'recurring_day' )->diagram(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 					<h2><?php esc_html_e( 'Create your first content type', 'postful' ); ?></h2>
 					<p><?php esc_html_e( 'A daily devotional, a lesson series, a glossary — pick a structure, choose languages and fields, and start writing. It takes about a minute.', 'postful' ); ?></p>
 					<a class="pf-btn pf-btn--primary pf-btn--lg" href="<?php echo esc_url( $new_url ); ?>"><?php esc_html_e( 'Add content type', 'postful' ); ?></a>
@@ -117,7 +128,6 @@ final class Admin {
 						?>
 						<article class="pf-card">
 							<header class="pf-card-head">
-								<span class="pf-card-icon dashicons <?php echo esc_attr( $type['icon'] ); ?>" aria-hidden="true"></span>
 								<div>
 									<h2 class="pf-card-title"><a href="<?php echo esc_url( admin_url( 'edit.php?post_type=' . $key ) ); ?>"><?php echo esc_html( $type['plural'] ); ?></a></h2>
 									<p class="pf-card-meta"><?php echo esc_html( $preset ? $preset->label() : $type['preset'] ); ?> · <code><?php echo esc_html( $key ); ?></code></p>
@@ -139,16 +149,12 @@ final class Admin {
 										<span class="pf-chip<?php echo $code === $type['default_lang'] ? ' pf-chip--strong' : ''; ?>"><?php echo esc_html( Languages::name( $locales[ $code ] ) ); ?></span>
 									<?php endforeach; ?>
 								</p>
-								<div class="pf-shortcodes">
-									<?php foreach ( [ 'sp_current', 'sp_index', 'sp_nav' ] as $sc ) : ?>
-										<?php self::copy_code( sprintf( '[%s type="%s"]', $sc, $key ) ); ?>
-									<?php endforeach; ?>
-								</div>
+								<?php self::copy_code( sprintf( '[postful type="%s"]', $key ) ); ?>
 							</div>
 							<footer class="pf-card-foot">
 								<a class="pf-btn pf-btn--ghost pf-btn--sm" href="<?php echo esc_url( admin_url( 'post-new.php?post_type=' . $key ) ); ?>"><?php esc_html_e( 'New entry', 'postful' ); ?></a>
 								<a class="pf-btn pf-btn--text pf-btn--sm" href="<?php echo esc_url( admin_url( 'admin.php?page=postful-type&type=' . $key ) ); ?>"><?php esc_html_e( 'Edit type', 'postful' ); ?></a>
-								<a class="pf-btn pf-btn--text pf-btn--sm" href="<?php echo esc_url( admin_url( 'edit.php?post_type=' . $key . '&page=postful-io-' . $key ) ); ?>"><?php esc_html_e( 'Import / export', 'postful' ); ?></a>
+								<a class="pf-btn pf-btn--text pf-btn--sm" href="<?php echo esc_url( Importer::url( $key ) ); ?>"><?php esc_html_e( 'Import / export', 'postful' ); ?></a>
 								<span class="pf-spacer"></span>
 								<a class="pf-btn pf-btn--text pf-btn--sm" href="<?php echo esc_url( wp_nonce_url( add_query_arg( [ 'action' => 'postful_export_type', 'type' => $key ], $post ), 'postful_export_type_' . $key ) ); ?>"><?php esc_html_e( 'JSON', 'postful' ); ?></a>
 								<form method="post" action="<?php echo esc_url( $post ); ?>" data-pf-confirm="deleteType">
@@ -229,21 +235,8 @@ final class Admin {
 			];
 		}
 
-		$icons = [
-			'dashicons-book-alt'          => __( 'Book', 'postful' ),
-			'dashicons-calendar-alt'      => __( 'Calendar', 'postful' ),
-			'dashicons-format-quote'      => __( 'Quote', 'postful' ),
-			'dashicons-heart'             => __( 'Heart', 'postful' ),
-			'dashicons-star-filled'       => __( 'Star', 'postful' ),
-			'dashicons-megaphone'         => __( 'Megaphone', 'postful' ),
-			'dashicons-welcome-learn-more' => __( 'Lesson', 'postful' ),
-			'dashicons-groups'            => __( 'People', 'postful' ),
-			'dashicons-microphone'        => __( 'Microphone', 'postful' ),
-			'dashicons-media-document'    => __( 'Document', 'postful' ),
-			'dashicons-admin-post'        => __( 'Pin', 'postful' ),
-		];
 		?>
-		<div class="wrap pf-wrap pf-wrap--narrow">
+		<div class="wrap pf-wrap pf-wrap--wizard">
 			<header class="pf-page-head">
 				<div>
 					<p class="pf-eyebrow"><a href="<?php echo esc_url( admin_url( 'admin.php?page=postful' ) ); ?>"><?php esc_html_e( 'Content types', 'postful' ); ?></a></p>
@@ -260,14 +253,14 @@ final class Admin {
 
 			<?php self::render_flash(); ?>
 
-			<form class="pf-wizard" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" data-pf-wizard novalidate>
+			<form class="pf-wizard" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" data-pf-wizard data-pf-start="<?php echo isset( $_GET['pf_step'] ) ? (int) $_GET['pf_step'] : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>" novalidate>
 				<input type="hidden" name="action" value="postful_save_type">
 				<input type="hidden" name="editing" value="<?php echo esc_attr( $editing ? $existing['key'] : '' ); ?>">
 				<?php wp_nonce_field( 'postful_save_type' ); ?>
 				<script type="application/json" data-pf-wizard-data><?php echo wp_json_encode( [ 'strings' => $strings, 'stringKeys' => Languages::string_keys(), 'names' => Languages::common() ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE ); ?></script>
 
 				<ol class="pf-stepper" data-pf-stepper>
-					<?php foreach ( [ __( 'Name', 'postful' ), __( 'Structure', 'postful' ), __( 'Languages', 'postful' ), __( 'Fields', 'postful' ) ] as $i => $label ) : ?>
+					<?php foreach ( [ __( 'Name', 'postful' ), __( 'Structure', 'postful' ), __( 'Languages', 'postful' ), __( 'Fields', 'postful' ), __( 'Layout', 'postful' ) ] as $i => $label ) : ?>
 						<li><button type="button" data-pf-goto="<?php echo (int) $i + 1; ?>"><span class="pf-stepper-num"><?php echo (int) $i + 1; ?></span><?php echo esc_html( $label ); ?></button></li>
 					<?php endforeach; ?>
 				</ol>
@@ -278,12 +271,12 @@ final class Admin {
 					<p class="pf-step-sub"><?php esc_html_e( 'Use the words your team already uses. These appear in the admin menu.', 'postful' ); ?></p>
 					<div class="pf-form-row pf-form-row--2">
 						<label class="pf-form-field">
-							<span class="pf-form-label"><?php esc_html_e( 'Plural name', 'postful' ); ?></span>
-							<input type="text" class="pf-text" name="plural" value="<?php echo esc_attr( $config['plural'] ); ?>" placeholder="<?php esc_attr_e( 'Devotionals', 'postful' ); ?>" data-pf-plural required>
+							<span class="pf-form-label"><?php esc_html_e( 'Name', 'postful' ); ?> <span class="pf-form-hint"><?php esc_html_e( 'plural, as in the menu', 'postful' ); ?></span></span>
+							<input type="text" class="pf-text" name="plural" value="<?php echo esc_attr( $config['plural'] ); ?>" data-pf-plural required>
 						</label>
 						<label class="pf-form-field">
-							<span class="pf-form-label"><?php esc_html_e( 'Singular name', 'postful' ); ?></span>
-							<input type="text" class="pf-text" name="singular" value="<?php echo esc_attr( $config['singular'] ); ?>" placeholder="<?php esc_attr_e( 'Devotional', 'postful' ); ?>" data-pf-singular required>
+							<span class="pf-form-label"><?php esc_html_e( 'Singular name', 'postful' ); ?> <span class="pf-form-hint"><?php esc_html_e( 'filled in for you', 'postful' ); ?></span></span>
+							<input type="text" class="pf-text" name="singular" value="<?php echo esc_attr( $config['singular'] ); ?>" data-pf-singular required>
 						</label>
 					</div>
 					<label class="pf-form-field pf-keyfield">
@@ -299,20 +292,8 @@ final class Admin {
 					</label>
 					<details class="pf-advanced">
 						<summary><?php esc_html_e( 'Advanced', 'postful' ); ?></summary>
-						<div class="pf-form-row pf-form-row--3">
-							<label class="pf-form-field">
-								<span class="pf-form-label"><?php esc_html_e( 'Menu icon', 'postful' ); ?></span>
-								<select class="pf-text" name="icon">
-									<?php foreach ( $icons as $icon => $label ) : ?>
-										<option value="<?php echo esc_attr( $icon ); ?>" <?php selected( $config['icon'], $icon ); ?>><?php echo esc_html( $label ); ?></option>
-									<?php endforeach; ?>
-								</select>
-							</label>
-							<label class="pf-form-field">
-								<span class="pf-form-label"><?php esc_html_e( 'Menu position', 'postful' ); ?></span>
-								<input type="number" class="pf-text" name="position" min="2" max="100" value="<?php echo (int) $config['position']; ?>">
-							</label>
-							<label class="pf-form-field">
+						<div class="pf-form-row">
+							<label class="pf-form-field pf-form-field--half">
 								<span class="pf-form-label"><?php esc_html_e( 'URL slug', 'postful' ); ?></span>
 								<input type="text" class="pf-text pf-mono" name="slug" value="<?php echo esc_attr( $config['slug'] ); ?>" placeholder="<?php esc_attr_e( 'same as key', 'postful' ); ?>">
 								<span class="pf-form-help"><?php esc_html_e( 'Only used if entries have their own URLs.', 'postful' ); ?></span>
@@ -398,18 +379,106 @@ final class Admin {
 							<?php self::field_row( (string) $i, $field, $editing && isset( $existing ) && in_array( $field['key'], array_column( $existing['fields'], 'key' ), true ) ); ?>
 						<?php endforeach; ?>
 					</ol>
-					<template data-pf-field-template><?php self::field_row( '__i__', [ 'key' => '', 'label' => '', 'type' => 'text', 'required' => false, 'help' => '', 'translatable' => true, 'choices' => [] ], false ); ?></template>
+					<template data-pf-field-template><?php self::field_row( '__i__', [ 'key' => '', 'label' => '', 'type' => 'text', 'display' => '', 'region' => 'main', 'required' => false, 'help' => '', 'translatable' => true, 'machine' => true, 'choices' => [] ], false ); ?></template>
 					<div class="pf-add-field">
 						<span class="pf-muted"><?php esc_html_e( 'Add a field:', 'postful' ); ?></span>
 						<?php foreach ( Fields::types() as $t => $label ) : ?>
-							<button type="button" class="pf-chip pf-chip--button" data-pf-add-field="<?php echo esc_attr( $t ); ?>">+ <?php echo esc_html( $label ); ?></button>
+							<button type="button" class="pf-chip pf-chip--button" data-pf-add-field="<?php echo esc_attr( $t ); ?>"><?php echo esc_html( $label ); ?></button>
 						<?php endforeach; ?>
 					</div>
+				</section>
+
+
+				<!-- 5. Layout -->
+				<section class="pf-step" data-pf-step="5">
+					<h2 class="pf-step-title"><?php esc_html_e( 'How should the page look?', 'postful' ); ?></h2>
+					<p class="pf-step-sub"><?php esc_html_e( 'One shortcode shows everything in this layout. You can change it any time.', 'postful' ); ?></p>
+					<div class="pf-layouts">
+						<?php foreach ( Types::layouts() as $id => [ $label, $desc ] ) : ?>
+							<label class="pf-layout-card">
+								<input type="radio" name="layout" value="<?php echo esc_attr( $id ); ?>" <?php checked( $config['layout'], $id ); ?>>
+								<span class="pf-layout-art"><?php echo self::layout_art( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG ?></span>
+								<span class="pf-layout-name"><?php echo esc_html( $label ); ?></span>
+								<span class="pf-layout-desc"><?php echo esc_html( $desc ); ?></span>
+							</label>
+						<?php endforeach; ?>
+					</div>
+
+					<div class="pf-placement" data-pf-placement>
+						<h3 class="pf-placement-title"><?php esc_html_e( 'What goes where', 'postful' ); ?></h3>
+						<p class="pf-form-help" data-pf-placement-note hidden><?php esc_html_e( 'This layout has no sidebar, so anything set to Sidebar shows below the entry instead.', 'postful' ); ?></p>
+						<div class="pf-place-list">
+							<?php
+							$place_labels = [
+								'nav'   => __( 'Previous / next', 'postful' ),
+								'index' => __( 'Month list', 'postful' ),
+							];
+							foreach ( Types::places() as $what => $options ) :
+								?>
+								<div class="pf-place-row">
+									<span class="pf-place-name"><?php echo esc_html( $place_labels[ $what ] ); ?></span>
+									<span class="pf-seg" role="radiogroup" aria-label="<?php echo esc_attr( $place_labels[ $what ] ); ?>">
+										<?php foreach ( $options as $value => $label ) : ?>
+											<label><input type="radio" name="<?php echo esc_attr( $what ); ?>_place" value="<?php echo esc_attr( $value ); ?>" <?php checked( $config[ $what . '_place' ], $value ); ?>><span><?php echo esc_html( $label ); ?></span></label>
+										<?php endforeach; ?>
+									</span>
+								</div>
+							<?php endforeach; ?>
+							<div class="pf-place-fields" data-pf-place-fields></div>
+						</div>
+						<p class="pf-form-help"><?php esc_html_e( 'The title and day always lead the main area. Sidebar fields change along with the entry when visitors browse.', 'postful' ); ?></p>
+					</div>
+
+					<div class="pf-style" data-pf-style>
+						<div class="pf-style-head">
+							<h3 class="pf-placement-title"><?php esc_html_e( 'Style', 'postful' ); ?></h3>
+							<p class="pf-form-help"><?php esc_html_e( 'Sizes, colours and spacing for the page. Leave a box empty to use your theme’s look. The preview uses a stand-in font; your site uses your theme’s.', 'postful' ); ?></p>
+						</div>
+						<div class="pf-preview">
+							<iframe title="<?php esc_attr_e( 'Layout preview', 'postful' ); ?>" data-pf-preview data-css="<?php echo esc_url( POSTFUL_URL . 'assets/front.css?ver=' . POSTFUL_VERSION ); ?>"></iframe>
+						</div>
+						<div class="pf-style-groups">
+							<?php $first = true; ?>
+							<?php foreach ( Types::style_controls() as $group => [ $group_label, $controls ] ) : ?>
+								<details class="pf-style-group" <?php echo $first ? 'open' : ''; ?>>
+									<summary><?php echo esc_html( $group_label ); ?></summary>
+									<div class="pf-style-fields">
+										<?php foreach ( $controls as $skey => [ $slabel, $kind, $var ] ) : ?>
+											<?php $val = $config['style'][ $skey ] ?? ''; ?>
+											<label class="pf-style-field">
+												<span class="pf-style-label"><?php echo esc_html( $slabel ); ?></span>
+												<?php if ( 'color' === $kind ) : ?>
+													<span class="pf-color">
+														<input type="color" value="<?php echo esc_attr( $val ?: '#000000' ); ?>" data-pf-swatch aria-label="<?php echo esc_attr( $slabel ); ?>">
+														<input type="text" class="pf-text pf-mono" name="style[<?php echo esc_attr( $skey ); ?>]" value="<?php echo esc_attr( $val ); ?>" placeholder="<?php esc_attr_e( 'Theme', 'postful' ); ?>" maxlength="7" data-pf-var="<?php echo esc_attr( $var ); ?>" data-kind="color">
+													</span>
+												<?php elseif ( is_array( $kind ) ) : ?>
+													<select class="pf-text" name="style[<?php echo esc_attr( $skey ); ?>]" data-pf-var="<?php echo esc_attr( $var ); ?>" data-kind="select">
+														<option value=""><?php esc_html_e( 'Theme default', 'postful' ); ?></option>
+														<?php foreach ( $kind as $ov => $ol ) : ?>
+															<option value="<?php echo esc_attr( $ov ); ?>" <?php selected( $val, (string) $ov ); ?>><?php echo esc_html( $ol ); ?></option>
+														<?php endforeach; ?>
+													</select>
+												<?php else : ?>
+													<span class="pf-unit">
+														<input type="number" class="pf-text" name="style[<?php echo esc_attr( $skey ); ?>]" value="<?php echo esc_attr( $val ); ?>" min="0" max="<?php echo 'number' === $kind ? 5 : 2000; ?>" step="<?php echo 'number' === $kind ? '0.05' : '1'; ?>" placeholder="<?php esc_attr_e( 'Theme', 'postful' ); ?>" data-pf-var="<?php echo esc_attr( $var ); ?>" data-kind="<?php echo esc_attr( $kind ); ?>">
+														<?php if ( 'size' === $kind ) : ?><em>px</em><?php endif; ?>
+													</span>
+												<?php endif; ?>
+											</label>
+										<?php endforeach; ?>
+									</div>
+								</details>
+								<?php $first = false; ?>
+							<?php endforeach; ?>
+						</div>
+						<button type="button" class="pf-btn pf-btn--text pf-btn--sm" data-pf-style-reset><?php esc_html_e( 'Clear all styles', 'postful' ); ?></button>
+					</div>
 					<details class="pf-advanced">
-						<summary><?php esc_html_e( 'Advanced: display', 'postful' ); ?></summary>
+						<summary><?php esc_html_e( 'Advanced', 'postful' ); ?></summary>
 						<label class="pf-form-field">
 							<span class="pf-form-label"><?php esc_html_e( 'Template', 'postful' ); ?></span>
-							<textarea class="pf-text pf-mono" name="template" rows="5" placeholder="<h2>{heading}</h2>&#10;<blockquote>{verse_text} <cite>{verse_reference}</cite></blockquote>&#10;{body}"><?php echo esc_textarea( $config['template'] ); ?></textarea>
+							<textarea class="pf-text pf-mono" name="template" rows="5" placeholder="<h2>{title}</h2>&#10;<p>{date}</p>&#10;{content}"><?php echo esc_textarea( $config['template'] ); ?></textarea>
 							<span class="pf-form-help"><?php esc_html_e( 'Optional. Use {field_key} placeholders and {date}. Leave empty to show fields in order, each wrapped in a .sp-field-{key} class.', 'postful' ); ?></span>
 						</label>
 						<div class="pf-form-field">
@@ -437,10 +506,11 @@ final class Admin {
 		$name = fn( $k ) => esc_attr( "fields[{$i}][{$k}]" );
 		?>
 		<li class="pf-field-row" data-pf-row <?php echo $locked ? 'data-pf-locked' : ''; ?>>
+			<input type="hidden" name="<?php echo $name( 'region' ); ?>" value="<?php echo esc_attr( $field['region'] ?? 'main' ); ?>" data-pf-field-region>
 			<div class="pf-field-main">
 				<span class="pf-field-order">
-					<button type="button" class="pf-icon-btn" data-pf-move="-1" aria-label="<?php esc_attr_e( 'Move up', 'postful' ); ?>">↑</button>
-					<button type="button" class="pf-icon-btn" data-pf-move="1" aria-label="<?php esc_attr_e( 'Move down', 'postful' ); ?>">↓</button>
+					<button type="button" class="pf-icon-btn" data-pf-move="-1"><?php esc_html_e( 'Up', 'postful' ); ?></button>
+					<button type="button" class="pf-icon-btn" data-pf-move="1"><?php esc_html_e( 'Down', 'postful' ); ?></button>
 				</span>
 				<input type="text" class="pf-text pf-field-label" name="<?php echo $name( 'label' ); ?>" value="<?php echo esc_attr( $field['label'] ); ?>" placeholder="<?php esc_attr_e( 'Field label', 'postful' ); ?>" aria-label="<?php esc_attr_e( 'Field label', 'postful' ); ?>" data-pf-field-label>
 				<select class="pf-text pf-field-type" name="<?php echo $name( 'type' ); ?>" aria-label="<?php esc_attr_e( 'Field type', 'postful' ); ?>" data-pf-field-type>
@@ -448,13 +518,19 @@ final class Admin {
 						<option value="<?php echo esc_attr( $t ); ?>" <?php selected( $field['type'], $t ); ?>><?php echo esc_html( $label ); ?></option>
 					<?php endforeach; ?>
 				</select>
+				<select class="pf-text pf-field-display" name="<?php echo $name( 'display' ); ?>" aria-label="<?php esc_attr_e( 'Shown as', 'postful' ); ?>" title="<?php esc_attr_e( 'How this field looks on the page', 'postful' ); ?>" data-pf-field-display>
+					<option value=""><?php esc_html_e( 'Auto style', 'postful' ); ?></option>
+					<?php foreach ( Types::display_styles() as $d => $label ) : ?>
+						<option value="<?php echo esc_attr( $d ); ?>" <?php selected( $field['display'] ?? '', $d ); ?>><?php echo esc_html( $label ); ?></option>
+					<?php endforeach; ?>
+				</select>
 				<label class="pf-check" data-pf-translatable-wrap <?php echo $locked ? 'title="' . esc_attr__( 'Fixed once entries exist, so saved content stays where it is.', 'postful' ) . '"' : ''; ?>>
 					<?php if ( $locked && ! empty( $field['translatable'] ) ) : ?><input type="hidden" name="<?php echo $name( 'translatable' ); ?>" value="1"><?php endif; ?>
 					<input type="checkbox" name="<?php echo $name( 'translatable' ); ?>" value="1" <?php checked( ! empty( $field['translatable'] ) ); ?> <?php disabled( $locked ); ?>>
 					<?php esc_html_e( 'Translated', 'postful' ); ?>
 				</label>
-				<button type="button" class="pf-icon-btn" data-pf-more aria-expanded="false" aria-label="<?php esc_attr_e( 'Field options', 'postful' ); ?>">⋯</button>
-				<button type="button" class="pf-icon-btn pf-icon-btn--danger" data-pf-remove aria-label="<?php esc_attr_e( 'Remove field', 'postful' ); ?>">×</button>
+				<button type="button" class="pf-icon-btn" data-pf-more aria-expanded="false"><?php esc_html_e( 'Options', 'postful' ); ?></button>
+				<button type="button" class="pf-icon-btn pf-icon-btn--danger" data-pf-remove><?php esc_html_e( 'Remove', 'postful' ); ?></button>
 			</div>
 			<div class="pf-field-more" data-pf-more-panel hidden>
 				<label class="pf-form-field">
@@ -476,6 +552,10 @@ final class Admin {
 					<span class="pf-form-label"><?php esc_html_e( 'Choices, one per line', 'postful' ); ?></span>
 					<textarea class="pf-text" rows="3" name="<?php echo $name( 'choices' ); ?>"><?php echo esc_textarea( implode( "\n", $field['choices'] ) ); ?></textarea>
 				</label>
+				<label class="pf-check" data-pf-machine-wrap>
+					<input type="checkbox" name="<?php echo $name( 'machine' ); ?>" value="1" <?php checked( ! empty( $field['machine'] ) ); ?>>
+					<?php esc_html_e( 'Include in machine translation drafts (turn off for e.g. Bible verses you quote from a set translation)', 'postful' ); ?>
+				</label>
 				<label class="pf-check">
 					<input type="checkbox" name="<?php echo $name( 'required' ); ?>" value="1" <?php checked( ! empty( $field['required'] ) ); ?>>
 					<?php esc_html_e( 'Required — flag entries where this is empty', 'postful' ); ?>
@@ -485,45 +565,67 @@ final class Admin {
 		<?php
 	}
 
+	/** Tiny wireframe for a layout card. */
+	private static function layout_art( string $id ): string {
+		$text  = fn( $x, $y, $w ) => sprintf( '<rect x="%d" y="%d" width="%d" height="3" rx="1.5" fill="currentColor" opacity=".28"/>', $x, $y, $w );
+		$entry = fn( $x, $w ) => sprintf( '<rect x="%d" y="8" width="%d" height="6" rx="2" fill="currentColor" opacity=".75"/>', $x, (int) ( $w * .55 ) )
+			. $text( $x, 20, $w ) . $text( $x, 27, $w - 6 ) . $text( $x, 34, $w ) . $text( $x, 41, $w - 12 );
+		$side  = function ( $x ) {
+			$out = sprintf( '<rect x="%d" y="8" width="11" height="4" rx="2" fill="currentColor" opacity=".55"/><rect x="%d" y="8" width="11" height="4" rx="2" fill="currentColor" opacity=".55"/>', $x, $x + 15 );
+			for ( $i = 0; $i < 4; $i++ ) {
+				$out .= sprintf( '<rect x="%d" y="%d" width="26" height="6" rx="2" fill="none" stroke="currentColor" stroke-opacity=".35"/>', $x, 17 + $i * 9 );
+			}
+			return $out;
+		};
+		$body = match ( $id ) {
+			'sidebar_left' => $side( 6 ) . $entry( 42, 62 ),
+			'stacked'      => $entry( 6, 98 ) . '<rect x="6" y="49" width="20" height="4" rx="2" fill="currentColor" opacity=".55"/><rect x="84" y="49" width="20" height="4" rx="2" fill="currentColor" opacity=".55"/>'
+				. '<rect x="6" y="57" width="98" height="5" rx="2" fill="none" stroke="currentColor" stroke-opacity=".35"/>',
+			'entry_only'   => $entry( 18, 74 ) . '<rect x="18" y="50" width="14" height="3" rx="1.5" fill="currentColor" opacity=".55"/><rect x="78" y="50" width="14" height="3" rx="1.5" fill="currentColor" opacity=".55"/>',
+			default        => $entry( 6, 62 ) . $side( 78 ),
+		};
+		return '<svg viewBox="0 0 110 68" aria-hidden="true">' . $body . '</svg>';
+	}
+
 	private static function done_page( array $type ): void {
-		$key = $type['key'];
+		$key     = $type['key'];
+		$layouts = Types::layouts();
 		?>
 		<div class="wrap pf-wrap pf-wrap--narrow">
 			<div class="pf-done">
-				<div class="pf-done-mark" aria-hidden="true">
-					<svg viewBox="0 0 24 24" width="28" height="28"><path d="M5 12.5l4.2 4.2L19 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-				</div>
 				<h1 class="pf-title">
 					<?php
-					/* translators: %s: plural content type name, lowercase */
-					echo esc_html( sprintf( __( 'You’re ready to publish %s', 'postful' ), strtolower( $type['plural'] ) ) );
+					/* translators: %s: plural content type name */
+					echo esc_html( sprintf( __( '%s: all set', 'postful' ), $type['plural'] ) );
 					?>
 				</h1>
-				<p class="pf-sub"><?php esc_html_e( 'Paste these shortcodes into the page where visitors will read them. Most sites use all three on one page.', 'postful' ); ?></p>
+				<p class="pf-sub">
+					<?php
+					/* translators: %s: layout name */
+					echo esc_html( sprintf( __( 'Paste this shortcode into the page where visitors will read it. It uses the “%s” layout.', 'postful' ), $layouts[ $type['layout'] ][0] ?? '' ) );
+					?>
+				</p>
 
-				<div class="pf-panel pf-done-codes">
-					<div class="pf-done-code">
-						<div><strong><?php esc_html_e( 'Current entry', 'postful' ); ?></strong><span class="pf-muted"><?php esc_html_e( 'Today’s, updated automatically', 'postful' ); ?></span></div>
+				<div class="pf-done-main-code"><?php self::copy_code( sprintf( '[postful type="%s"]', $key ) ); ?></div>
+
+				<details class="pf-advanced pf-done-parts">
+					<summary><?php esc_html_e( 'Placing the parts separately', 'postful' ); ?></summary>
+					<p class="pf-muted"><?php esc_html_e( 'For unusual page designs you can place each part on its own instead. They still work together on the same page.', 'postful' ); ?></p>
+					<div class="pf-shortcodes">
 						<?php self::copy_code( sprintf( '[sp_current type="%s"]', $key ) ); ?>
-					</div>
-					<div class="pf-done-code">
-						<div><strong><?php esc_html_e( 'Previous / next', 'postful' ); ?></strong><span class="pf-muted"><?php esc_html_e( 'Walks through entries in place', 'postful' ); ?></span></div>
 						<?php self::copy_code( sprintf( '[sp_nav type="%s"]', $key ) ); ?>
-					</div>
-					<div class="pf-done-code">
-						<div><strong><?php esc_html_e( 'Index', 'postful' ); ?></strong><span class="pf-muted"><?php esc_html_e( 'Month-by-month list of every entry', 'postful' ); ?></span></div>
 						<?php self::copy_code( sprintf( '[sp_index type="%s"]', $key ) ); ?>
 					</div>
-				</div>
+				</details>
 
 				<div class="pf-btn-row pf-btn-row--center">
 					<a class="pf-btn pf-btn--primary" href="<?php echo esc_url( admin_url( 'post-new.php?post_type=' . $key ) ); ?>">
 						<?php
 						/* translators: %s: singular content type name */
-						echo esc_html( sprintf( __( 'Write the first %s', 'postful' ), strtolower( $type['singular'] ) ) );
+						echo esc_html( sprintf( __( 'Add the first %s', 'postful' ), strtolower( $type['singular'] ) ) );
 						?>
 					</a>
-					<a class="pf-btn pf-btn--ghost" href="<?php echo esc_url( admin_url( 'edit.php?post_type=' . $key . '&page=postful-io-' . $key ) ); ?>"><?php esc_html_e( 'Import from a spreadsheet', 'postful' ); ?></a>
+					<a class="pf-btn pf-btn--ghost" href="<?php echo esc_url( Importer::url( $key ) ); ?>"><?php esc_html_e( 'Import from a spreadsheet', 'postful' ); ?></a>
 				</div>
 				<p class="pf-done-foot"><a href="<?php echo esc_url( admin_url( 'admin.php?page=postful' ) ); ?>"><?php esc_html_e( 'Back to content types', 'postful' ); ?></a></p>
 			</div>
@@ -547,7 +649,10 @@ final class Admin {
 			self::flash( $config->get_error_message(), 'error' );
 			// Keep everything they typed so the fix is one edit, not a redo.
 			set_transient( 'postful_wizard_' . get_current_user_id(), self::draft( $input ), MINUTE_IN_SECONDS );
-			wp_safe_redirect( admin_url( 'admin.php?page=postful-type' . ( $existing ? '&type=' . $existing['key'] : '' ) ) );
+			// Reopen the wizard on the step that needs fixing.
+			$steps = [ 'name' => 1, 'key' => 1, 'preset' => 2, 'languages' => 3, 'field_key' => 4, 'fields' => 4 ];
+			$step  = $steps[ $config->get_error_code() ] ?? 1;
+			wp_safe_redirect( admin_url( 'admin.php?page=postful-type&pf_step=' . $step . ( $existing ? '&type=' . $existing['key'] : '' ) ) );
 			exit;
 		}
 
@@ -567,6 +672,9 @@ final class Admin {
 				'key'          => sanitize_key( $row['key'] ?? '' ),
 				'label'        => sanitize_text_field( $row['label'] ?? '' ),
 				'type'         => isset( Fields::types()[ $row['type'] ?? '' ] ) ? $row['type'] : 'text',
+				'display'      => sanitize_key( $row['display'] ?? '' ),
+				'region'       => ( $row['region'] ?? '' ) === 'sidebar' ? 'sidebar' : 'main',
+				'machine'      => ! empty( $row['machine'] ),
 				'required'     => ! empty( $row['required'] ),
 				'help'         => sanitize_text_field( $row['help'] ?? '' ),
 				'translatable' => ! empty( $row['translatable'] ),
@@ -594,6 +702,10 @@ final class Admin {
 			'fields'       => $fields,
 			'template'     => wp_kses_post( (string) ( $in['template'] ?? '' ) ),
 			'strings'      => $strings,
+			'layout'       => sanitize_key( $in['layout'] ?? '' ) ?: 'sidebar_right',
+			'nav_place'    => sanitize_key( $in['nav_place'] ?? '' ) ?: 'sidebar',
+			'style'        => Types::sanitize_style( $in['style'] ?? [] ),
+			'index_place'  => sanitize_key( $in['index_place'] ?? '' ) ?: 'sidebar',
 		];
 	}
 

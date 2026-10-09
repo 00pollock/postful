@@ -48,22 +48,11 @@ final class Preset_Recurring_Day extends Preset {
 		return '<svg viewBox="0 0 92 42" aria-hidden="true"><rect x="4" y="3" width="30" height="7" rx="2" fill="currentColor" opacity=".35"/>' . $cells . '</svg>';
 	}
 
+	/** A neutral start; the user names and adds fields in the wizard. */
 	public function default_fields(): array {
-		$f = fn( $key, $label, $type ) => [
-			'key'          => $key,
-			'label'        => $label,
-			'type'         => $type,
-			'required'     => in_array( $key, [ 'heading', 'body' ], true ),
-			'help'         => '',
-			'translatable' => true,
-			'choices'      => [],
-		];
 		return [
-			$f( 'heading', __( 'Heading', 'postful' ), 'text' ),
-			$f( 'verse_text', __( 'Verse text', 'postful' ), 'textarea' ),
-			$f( 'verse_reference', __( 'Verse reference', 'postful' ), 'text' ),
-			$f( 'body', __( 'Body', 'postful' ), 'richtext' ),
-			$f( 'scripture_reading', __( 'Scripture reading', 'postful' ), 'text' ),
+			[ 'key' => 'title', 'label' => __( 'Title', 'postful' ), 'type' => 'text', 'display' => 'title', 'required' => true, 'help' => '', 'translatable' => true, 'machine' => true, 'choices' => [] ],
+			[ 'key' => 'content', 'label' => __( 'Content', 'postful' ), 'type' => 'richtext', 'display' => 'body', 'required' => true, 'help' => '', 'translatable' => true, 'machine' => true, 'choices' => [] ],
 		];
 	}
 

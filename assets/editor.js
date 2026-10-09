@@ -128,6 +128,122 @@
 		}
 	}
 
+	/* ---- Machine-translated drafts (DeepL) ------------------------------- */
+
+	function toast( text, isError ) {
+		var el = document.createElement( 'div' );
+		el.className = 'pf-toast' + ( isError ? ' is-error' : '' );
+		el.setAttribute( 'role', 'status' );
+		el.textContent = text;
+		document.body.appendChild( el );
+		setTimeout( function () { el.classList.add( 'is-out' ); }, 4200 );
+		setTimeout( function () { el.remove(); }, 4700 );
+	}
+
+	function readCell( cell ) {
+		var rich = cell.querySelector( '.wp-editor-area' );
+		if ( rich ) {
+			var ed = window.tinymce && window.tinymce.get( rich.id );
+			return ed && ! ed.isHidden() ? ed.getContent() : rich.value;
+		}
+		var input = cell.querySelector( 'input:not([type=hidden]), textarea' );
+		return input ? input.value : '';
+	}
+
+	function writeCell( cell, value ) {
+		var rich = cell.querySelector( '.wp-editor-area' );
+		if ( rich ) {
+			var ed = window.tinymce && window.tinymce.get( rich.id );
+			if ( ed && ! ed.isHidden() ) {
+				ed.setContent( value );
+				ed.save();
+			} else {
+				rich.value = value;
+			}
+			return;
+		}
+		var input = cell.querySelector( 'input:not([type=hidden]), textarea' );
+		if ( input ) {
+			input.value = value;
+			input.dispatchEvent( new Event( 'input', { bubbles: true } ) );
+		}
+	}
+
+	document.querySelectorAll( '[data-pf-translate]' ).forEach( function ( btn ) {
+		var lang = btn.getAttribute( 'data-pf-translate' );
+		var label = btn.textContent;
+
+		btn.addEventListener( 'click', function () {
+			var body = new FormData();
+			body.append( 'action', 'postful_translate' );
+			body.append( '_wpnonce', cfg.nonce );
+			body.append( 'post_id', cfg.postId );
+			body.append( 'lang', lang );
+
+			var targets = {};
+			var any = false;
+			( cfg.machine || [] ).forEach( function ( key ) {
+				var src = canvas.querySelector( '.pf-cell[data-pf-field="' + key + '"][data-pf-lang="' + cfg.defLang + '"]' );
+				var dst = canvas.querySelector( '.pf-cell[data-pf-field="' + key + '"][data-pf-lang="' + lang + '"]' );
+				if ( ! src || ! dst ) {
+					return;
+				}
+				// Only fill gaps: never overwrite something a person wrote.
+				var tmp = document.createElement( 'div' );
+				tmp.innerHTML = readCell( dst );
+				if ( ( tmp.textContent || '' ).trim() || tmp.querySelector( 'img, iframe, video, audio' ) ) {
+					return;
+				}
+				var value = readCell( src );
+				if ( value.trim() ) {
+					body.append( 'values[' + key + ']', value );
+					targets[ key ] = dst;
+					any = true;
+				}
+			} );
+			if ( ! any ) {
+				toast( cfg.i18n.nothing );
+				return;
+			}
+
+			btn.disabled = true;
+			btn.textContent = cfg.i18n.translating;
+			fetch( cfg.ajax, { method: 'POST', credentials: 'same-origin', body: body } )
+				.then( function ( r ) { return r.json(); } )
+				.then( function ( json ) {
+					if ( ! json || ! json.success ) {
+						throw new Error( json && json.data && json.data.message ? json.data.message : cfg.i18n.failed );
+					}
+					var filled = [];
+					Object.keys( json.data.values ).forEach( function ( key ) {
+						if ( targets[ key ] ) {
+							writeCell( targets[ key ], json.data.values[ key ] );
+							filled.push( key );
+						}
+					} );
+					var n = filled.length;
+					var review = canvas.querySelector( '[data-pf-review="' + lang + '"]' );
+					if ( review && n ) {
+						// Only these fields become drafts; anything a person wrote stays live.
+						var flag = review.querySelector( '[data-pf-review-flag]' );
+						flag.value = flag.value ? flag.value + ',' + filled.join( ',' ) : filled.join( ',' );
+						review.hidden = false;
+						review.querySelector( 'input[type=checkbox]' ).checked = false;
+					}
+					document.querySelectorAll( '[data-pf-autogrow]' ).forEach( grow );
+					progress();
+					toast( fmt( cfg.i18n.filled, n ) );
+				} )
+				.catch( function ( err ) {
+					toast( err.message || cfg.i18n.failed, true );
+				} )
+				.then( function () {
+					btn.disabled = false;
+					btn.textContent = label;
+				} );
+		} );
+	} );
+
 	/* ---- Image / file picker -------------------------------------------- */
 
 	document.querySelectorAll( '[data-pf-media]' ).forEach( function ( wrap ) {

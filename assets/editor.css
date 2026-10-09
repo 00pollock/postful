@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Postful entry editor — a quiet writing surface. Languages side by side,
+   Postful entry editor — a soft writing surface. Languages side by side,
    aligned field by field, stacking when the canvas gets narrow.
    Tokens come from admin.css (.pf-admin).
    ========================================================================== */
@@ -9,10 +9,10 @@
 .pf-entry-screen #wpbody-content > .wrap { max-width: 1440px; margin-right: 24px; }
 .pf-entry-screen .wrap h1.wp-heading-inline {
 	margin-bottom: 6px;
-	font-family: var(--pf-serif);
-	font-size: 26px;
-	font-weight: 500;
-	letter-spacing: -.01em;
+	font-family: var(--pf-sans);
+	font-size: 24px;
+	font-weight: 650;
+	letter-spacing: -.02em;
 	color: var(--pf-ink);
 }
 .pf-entry-screen .wrap .page-title-action {
@@ -37,7 +37,7 @@
 	overflow: hidden;
 	border: 1px solid var(--pf-line);
 	border-radius: var(--pf-radius);
-	box-shadow: none;
+	box-shadow: var(--pf-shadow);
 }
 .pf-entry-screen .postbox-header { border-bottom-color: var(--pf-line); }
 .pf-entry-screen .postbox-header h2.hndle {
@@ -118,10 +118,11 @@
 .pf-canvas {
 	container: pf-canvas / inline-size;
 	margin-bottom: 20px;
-	padding: 36px 44px 28px;
+	padding: 30px 36px 24px;
 	border: 1px solid var(--pf-line);
-	border-radius: 16px;
+	border-radius: 18px;
 	background: var(--pf-paper);
+	box-shadow: var(--pf-shadow);
 	color: var(--pf-ink);
 }
 .pf-canvas .pf-callout { margin-bottom: 24px; }
@@ -144,7 +145,7 @@
 	grid-template-columns: repeat(var(--pf-cols, 1), minmax(0, 1fr));
 	grid-template-rows: repeat(var(--pf-rows, 1), auto);
 	grid-auto-flow: column;
-	column-gap: 64px;
+	column-gap: 48px;
 }
 .pf-grid--single { grid-template-columns: minmax(0, 1fr); grid-auto-flow: row; grid-template-rows: none; max-width: 760px; }
 .pf-grid--cols-2 {
@@ -153,13 +154,14 @@
 
 .pf-lang-head {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
-	gap: 10px;
+	gap: 8px 10px;
 	margin-bottom: 10px;
 	padding-bottom: 14px;
 	border-bottom: 1px solid var(--pf-line);
 }
-.pf-lang-name { font-family: var(--pf-serif); font-size: 19px; font-weight: 500; color: var(--pf-ink); }
+.pf-lang-name { font-size: 16px; font-weight: 650; color: var(--pf-ink); }
 .pf-lang-tag {
 	padding: 2px 8px;
 	border-radius: 999px;
@@ -177,23 +179,21 @@
 	font-size: 12px;
 	font-variant-numeric: tabular-nums;
 }
-.pf-lang-progress::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--pf-line-2); }
-.pf-lang-progress.is-partial::before { background: #d9a441; }
+.pf-lang-progress.is-partial { color: var(--pf-warn); }
 .pf-lang-progress.is-complete { color: var(--pf-accent-ink); }
-.pf-lang-progress.is-complete::before { background: var(--pf-accent); }
 
 /* ---- Cells -------------------------------------------------------------- */
 
-.pf-cell { min-width: 0; padding: 16px 0 14px; }
+.pf-cell { min-width: 0; padding: 12px 0; }
 .pf-cell .pf-label {
 	display: flex;
 	align-items: center;
 	gap: 4px;
 	margin-bottom: 4px;
-	color: var(--pf-muted);
-	font-size: 12px;
-	font-weight: 500;
-	letter-spacing: .01em;
+	margin-bottom: 6px;
+	color: var(--pf-ink-2);
+	font-size: 12.5px;
+	font-weight: 600;
 }
 .pf-req { color: var(--pf-danger); font-size: 14px; line-height: 1; opacity: .7; }
 .pf-help { margin: 6px 0 0; color: var(--pf-faint); font-size: 12px; }
@@ -203,31 +203,31 @@
 .pf-canvas textarea.pf-input {
 	display: block;
 	width: 100%;
-	min-height: 0;
+	min-height: 42px;
 	margin: 0;
-	padding: 6px 0 7px;
-	border: 0;
-	border-bottom: 1px solid var(--pf-line);
-	border-radius: 0;
-	background: transparent;
+	padding: 9px 13px;
+	border: 1px solid transparent;
+	border-radius: var(--pf-radius-sm);
+	background: var(--pf-fill);
 	box-shadow: none;
 	color: var(--pf-ink);
-	font-family: var(--pf-serif);
-	font-size: 17px;
+	font-family: var(--pf-sans);
+	font-size: 15px;
 	line-height: 1.55;
-	transition: border-color .15s;
+	transition: border-color .15s, background .15s, box-shadow .15s;
 }
 .pf-canvas textarea.pf-input { resize: none; overflow: hidden; }
-.pf-canvas .pf-input:hover { border-bottom-color: var(--pf-line-2); }
-.pf-canvas .pf-input:focus { border-bottom-color: var(--pf-accent); box-shadow: 0 1px 0 0 var(--pf-accent); outline: none; }
+.pf-canvas .pf-input:hover { background: #eef0f3; }
+.pf-canvas .pf-input:focus { border-color: var(--pf-accent); background: var(--pf-paper); box-shadow: var(--pf-focus); outline: none; }
 .pf-canvas .pf-input::placeholder { color: var(--pf-faint); }
 .pf-canvas input.pf-input--title {
-	font-size: 28px;
+	min-height: 50px;
+	font-size: 20px;
 	font-weight: 600;
-	line-height: 1.25;
-	letter-spacing: -.012em;
+	line-height: 1.3;
+	letter-spacing: -.01em;
 }
-.pf-canvas input.pf-input--short { max-width: 240px; font-family: var(--pf-sans); font-size: 15px; }
+.pf-canvas input.pf-input--short { max-width: 240px; }
 .pf-canvas select.pf-select { max-width: 320px; }
 
 /* Rich text: a soft frame, toolbar blending into the paper */
@@ -310,5 +310,29 @@
 }
 @media (max-width: 782px) {
 	.pf-canvas { padding: 22px 18px 16px; border-radius: 12px; }
-	.pf-canvas input.pf-input--title { font-size: 23px; }
+	.pf-canvas input.pf-input--title { font-size: 18px; }
 }
+
+/* ---- Translation drafts ------------------------------------------------- */
+
+.pf-lang-head .pf-btn--sm { height: 28px; }
+.pf-review {
+	display: flex;
+	flex-basis: 100%;
+	align-items: center;
+	gap: 12px;
+	padding: 8px 12px;
+	border-radius: var(--pf-radius-sm);
+	background: var(--pf-info-soft);
+	color: var(--pf-info);
+	font-size: 12.5px;
+	line-height: 1.4;
+}
+.pf-review-text { flex: 1; }
+.pf-review-check { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.pf-review-check input { margin: 0 !important; }
+
+.pf-entry-screen input[type="checkbox"]:checked { border-color: var(--pf-accent); background-color: var(--pf-accent); }
+
+/* Headers share a grid row; keep content top-aligned when one is taller. */
+.pf-lang-head { align-content: flex-start; }

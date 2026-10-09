@@ -15,6 +15,7 @@ final class Settings {
 			'front_styles'        => true,
 			'lang_override'       => false,
 			'delete_on_uninstall' => false,
+			'deepl_key'           => '',
 		];
 	}
 
@@ -38,9 +39,10 @@ final class Settings {
 	public static function sanitize( $input ): array {
 		$input = is_array( $input ) ? $input : [];
 		$out   = [];
-		foreach ( array_keys( self::defaults() ) as $key ) {
-			$out[ $key ] = ! empty( $input[ $key ] );
+		foreach ( self::defaults() as $key => $default ) {
+			$out[ $key ] = is_bool( $default ) ? ! empty( $input[ $key ] ) : '';
 		}
+		$out['deepl_key'] = preg_replace( '/[^A-Za-z0-9:\-]/', '', (string) ( $input['deepl_key'] ?? '' ) );
 		return $out;
 	}
 
@@ -73,6 +75,7 @@ final class Settings {
 			<?php settings_errors(); ?>
 			<form method="post" action="options.php" class="pf-panel">
 				<?php settings_fields( 'postful_settings' ); ?>
+				<h2 class="pf-panel-title"><?php esc_html_e( 'Display', 'postful' ); ?></h2>
 				<?php foreach ( $rows as $key => [ $label, $help ] ) : ?>
 					<label class="pf-setting">
 						<span class="pf-setting-text">
@@ -85,6 +88,28 @@ final class Settings {
 						</span>
 					</label>
 				<?php endforeach; ?>
+				<h2 class="pf-panel-title pf-panel-title--spaced"><?php esc_html_e( 'Translation drafts (DeepL)', 'postful' ); ?></h2>
+				<p class="pf-setting-help">
+					<?php esc_html_e( 'Optional. Adds a “Translate from …” button to the editor and a bulk option to Import / Export. Machine drafts stay hidden from visitors until someone marks them reviewed. Text is only sent to DeepL when you click Translate.', 'postful' ); ?>
+					<a href="https://www.deepl.com/pro-api" target="_blank" rel="noopener"><?php esc_html_e( 'Get a free API key', 'postful' ); ?></a>
+				</p>
+				<label class="pf-form-field pf-form-field--key">
+					<span class="pf-form-label"><?php esc_html_e( 'DeepL API key', 'postful' ); ?></span>
+					<input type="password" class="pf-text pf-mono" name="<?php echo esc_attr( self::OPTION ); ?>[deepl_key]" value="<?php echo esc_attr( (string) self::get( 'deepl_key' ) ); ?>" autocomplete="off" spellcheck="false" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx">
+					<?php if ( Translator::enabled() ) : ?>
+						<?php $usage = Translator::usage(); ?>
+						<?php if ( is_wp_error( $usage ) ) : ?>
+							<span class="pf-form-help pf-form-help--error"><?php echo esc_html( $usage->get_error_message() ); ?></span>
+						<?php else : ?>
+							<span class="pf-form-help pf-form-help--ok">
+								<?php
+								/* translators: 1: characters used, 2: monthly limit */
+								echo esc_html( sprintf( __( 'Connected. %1$s of %2$s characters used this month.', 'postful' ), number_format_i18n( $usage['count'] ), $usage['limit'] ? number_format_i18n( $usage['limit'] ) : '∞' ) );
+								?>
+							</span>
+						<?php endif; ?>
+					<?php endif; ?>
+				</label>
 				<div class="pf-panel-foot">
 					<button type="submit" class="pf-btn pf-btn--primary"><?php esc_html_e( 'Save settings', 'postful' ); ?></button>
 				</div>

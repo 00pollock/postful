@@ -13,18 +13,41 @@ defined( 'ABSPATH' ) || exit;
 final class Importer {
 
 	public static function hooks(): void {
-		add_action( 'admin_menu', [ self::class, 'menus' ] );
+		add_action( 'admin_menu', [ self::class, 'menus' ], 11 );
 		add_action( 'admin_post_postful_csv_template', [ self::class, 'download_template' ] );
 		add_action( 'admin_post_postful_csv_export', [ self::class, 'export' ] );
 		add_action( 'admin_post_postful_csv_import', [ self::class, 'import' ] );
+		add_filter( 'parent_file', [ self::class, 'parent_file' ], 20 );
+		add_filter( 'submenu_file', [ self::class, 'submenu_file' ], 20 );
+	}
+
+	private static function current_page_type(): ?string {
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		return str_starts_with( $page, 'postful-io-' ) ? substr( $page, 11 ) : null;
+	}
+
+	public static function parent_file( $file ) {
+		return self::current_page_type() ? 'postful' : $file;
+	}
+
+	public static function submenu_file( $file ) {
+		$key = self::current_page_type();
+		return $key ? 'edit.php?post_type=' . $key : $file;
+	}
+
+	public static function url( string $key ): string {
+		return admin_url( 'admin.php?page=postful-io-' . $key );
 	}
 
 	public static function menus(): void {
 		foreach ( Types::all() as $key => $type ) {
+			// No menu item of its own (parent options.php keeps it out of the menu);
+			// reached from the entries list and the content type card.
 			add_submenu_page(
-				'edit.php?post_type=' . $key,
-				__( 'Import / Export', 'postful' ),
-				__( 'Import / Export', 'postful' ),
+				'options.php',
+				/* translators: %s: plural type name */
+				sprintf( __( '%s: import / export', 'postful' ), $type['plural'] ),
+				__( 'Import / export', 'postful' ),
 				'edit_others_posts',
 				'postful-io-' . $key,
 				fn() => self::page( $key )
@@ -114,7 +137,7 @@ final class Importer {
 
 	public static function import(): void {
 		$type     = self::guard( 'postful_csv_import' );
-		$redirect = admin_url( 'edit.php?post_type=' . $type['key'] . '&page=postful-io-' . $type['key'] );
+		$redirect = self::url( $type['key'] );
 		$status   = isset( $_POST['default_status'] ) && 'draft' === $_POST['default_status'] ? 'draft' : 'publish';
 
 		try {
@@ -227,8 +250,9 @@ final class Importer {
 				continue;
 			}
 
-			$values = [];
-			$bad    = [];
+			$values   = [];
+			$bad      = [];
+			$imported = [];
 			foreach ( $cols as $col => [ $field, $code ] ) {
 				$raw = $row[ $col ] ?? '';
 				if ( '' === $raw ) {
@@ -240,6 +264,9 @@ final class Importer {
 					continue;
 				}
 				$values[ Fields::meta_key( $field['key'], $code ) ] = $clean;
+				if ( $code && $code !== $type['default_lang'] ) {
+					$imported[ $code ][] = $field['key'];
+				}
 			}
 			if ( $bad ) {
 				/* translators: %s: column names */
@@ -287,12 +314,81 @@ final class Importer {
 			foreach ( $values as $meta_key => $value ) {
 				update_post_meta( $post_id, $meta_key, wp_slash( $value ) );
 			}
+			// Imported text is human-provided: it replaces any machine draft in that field.
+			foreach ( $imported as $code => $keys ) {
+				Translator::clear_machine( $post_id, $code, $keys );
+			}
 		}
 		wp_defer_term_counting( false );
 		fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 
 		Index::flush( $type['key'] );
 		return $result;
+	}
+
+	/** Bulk machine drafts for empty translations. */
+	private static function translate_panel( array $type ): void {
+		$locales = Types::locales( $type );
+		$others  = array_filter( Types::lang_codes( $type ), fn( $c ) => $c !== $type['default_lang'] );
+		if ( ! $others || ! Translator::machine_fields( $type ) ) {
+			return;
+		}
+		$source = Languages::name( $locales[ $type['default_lang'] ] );
+		?>
+		<div class="pf-panel pf-translate-panel">
+			<h2 class="pf-panel-title"><?php esc_html_e( 'Translation drafts', 'postful' ); ?></h2>
+			<?php if ( ! Translator::enabled() ) : ?>
+				<p class="pf-muted">
+					<?php
+					printf(
+						/* translators: %s: link to settings */
+						esc_html__( 'Add a DeepL API key in %s to fill missing translations automatically. Drafts stay hidden from visitors until reviewed.', 'postful' ),
+						'<a href="' . esc_url( admin_url( 'admin.php?page=postful-settings' ) ) . '">' . esc_html__( 'Postful → Settings', 'postful' ) . '</a>'
+					);
+					?>
+				</p>
+			<?php else : ?>
+				<p class="pf-muted"><?php esc_html_e( 'Fills only empty fields that are set to auto-translate. Nothing a person wrote is overwritten. Every draft is marked “Needs review” and stays hidden from visitors until someone marks it reviewed.', 'postful' ); ?></p>
+				<?php foreach ( $others as $code ) : ?>
+					<?php
+					$name = Languages::name( $locales[ $code ] );
+					if ( ! Translator::can_translate( $type, $code ) ) {
+						/* translators: %s: language name */
+						echo '<p class="pf-muted">' . esc_html( sprintf( __( 'DeepL can’t translate into %s.', 'postful' ), $name ) ) . '</p>';
+						continue;
+					}
+					$pending = Translator::pending( $type, $code );
+					?>
+					<div class="pf-bulk" data-pf-bulk data-type="<?php echo esc_attr( $type['key'] ); ?>" data-lang="<?php echo esc_attr( $code ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce( 'postful_translate_batch_' . $type['key'] ) ); ?>" data-total="<?php echo (int) count( $pending['ids'] ); ?>">
+						<div class="pf-bulk-text">
+							<strong>
+								<?php
+								/* translators: 1: number of entries, 2: language name */
+								echo esc_html( sprintf( _n( '%1$d entry is missing %2$s', '%1$d entries are missing %2$s', count( $pending['ids'] ), 'postful' ), count( $pending['ids'] ), $name ) );
+								?>
+							</strong>
+							<?php if ( $pending['chars'] ) : ?>
+								<span class="pf-muted">
+									<?php
+									/* translators: %s: number of characters */
+									echo esc_html( sprintf( __( 'About %s characters of your DeepL allowance.', 'postful' ), number_format_i18n( $pending['chars'] ) ) );
+									?>
+								</span>
+							<?php endif; ?>
+							<div class="pf-progress" hidden><span class="pf-progress-bar" data-pf-bar></span></div>
+							<span class="pf-bulk-status" data-pf-status role="status"></span>
+						</div>
+						<button type="button" class="pf-btn pf-btn--soft" data-pf-bulk-go <?php disabled( ! $pending['ids'] ); ?>>
+							<?php
+							/* translators: 1: target language, 2: source language */
+							echo esc_html( sprintf( __( 'Translate into %1$s from %2$s', 'postful' ), $name, $source ) );
+							?>
+						</button>
+					</div>
+				<?php endforeach; ?>
+			<?php endif; ?>
+		</div>
+		<?php
 	}
 
 	public static function page( string $key ): void {
@@ -352,6 +448,8 @@ final class Importer {
 					</div>
 				<?php endif; ?>
 			<?php endif; ?>
+
+			<?php self::translate_panel( $type ); ?>
 
 			<div class="pf-columns">
 				<form class="pf-panel" method="post" action="<?php echo esc_url( $post ); ?>" enctype="multipart/form-data">

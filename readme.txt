@@ -19,6 +19,8 @@ Postful lets you create a content type (for example "Devotionals") with its own 
 * One page, one address: visitors browse by month or previous/next without the URL changing, so a daily email can always link to the same page.
 * Follows the language your site is already showing (GTranslate, browser language). It never sets a language itself.
 * CSV import and export, re-runnable: add French to English-only entries in a second pass.
+* Four layouts with a main/sidebar placement picker and a Style panel with live preview.
+* Optional DeepL translation drafts that stay hidden from visitors until reviewed.
 
 More structures (dated entries, sequences, evergreen pages, events) are coming.
 
@@ -26,7 +28,7 @@ More structures (dated entries, sequences, evergreen pages, events) are coming.
 
 1. Upload the `postful` folder to `/wp-content/plugins/` or install the zip from Plugins → Add New → Upload.
 2. Activate, then go to Postful → Add content type.
-3. Put the shortcodes on a page: `[sp_current type="devotional"]`, `[sp_nav type="devotional"]`, `[sp_index type="devotional"]`.
+3. Put one shortcode on a page: `[postful type="devotional"]`.
 
 == Frequently Asked Questions ==
 
@@ -45,4 +47,4 @@ No. Entries are only deleted if you switch on Postful → Settings → "Delete d
 == Changelog ==
 
 = 0.1.0 =
-* First release: setup wizard, Recurring day structure, side-by-side multilingual editor, shortcodes with in-place navigation, GTranslate-aware language display, CSV import/export, type JSON import/export.
+* First release: setup wizard, Recurring day structure, side-by-side multilingual editor, single [postful] shortcode with four layouts, main/sidebar placement and a Style panel, in-place navigation, GTranslate-aware language display, optional DeepL translation drafts with review, CSV import/export, type JSON import/export.

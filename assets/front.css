@@ -1,152 +1,212 @@
 /*
- * Postful default reading styles. Optional (Postful → Settings).
- * Everything is scoped under .postful and kept low-specificity so the theme's
- * own rules win. Colours derive from the theme's text colour.
+ * Postful default styles. Optional (Postful → Settings).
+ * Uses the theme's font and colours unless the content type's Style panel
+ * sets them (as --pf-* custom properties on the wrapper). Scoped and kept
+ * low-specificity so the theme's own rules win.
  */
 
 .postful [hidden] { display: none !important; }
 
-.postful {
-	--pf-rule: rgba(127, 127, 127, .25);
-	--pf-tint: rgba(127, 127, 127, .08);
-	--pf-tint-2: rgba(127, 127, 127, .15);
+.postful,
+.postful-layout {
+	--pf-rule: var(--pf-index-line, rgba(127, 127, 127, .22));
+	--pf-radius: 10px;
+	/* Focus colour: Style panel → theme's primary colour → a calm blue. */
+	--pf-focus-c: var(--pf-accent, var(--wp--preset--color--primary, #2457c5));
+	color: var(--pf-text, inherit);
+	font-size: var(--pf-text-size, inherit);
+}
+.postful a { color: var(--pf-focus-c); }
+
+/* ---- Layouts ------------------------------------------------------------ */
+
+.postful-layout { max-width: var(--pf-width, none); margin: 0 auto 2em; }
+
+.postful-layout.pf-layout--sidebar-right,
+.postful-layout.pf-layout--sidebar-left {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) var(--pf-aside-width, 280px);
+	gap: var(--pf-gap, 48px);
+	align-items: start;
+}
+.postful-layout.pf-layout--sidebar-left { grid-template-columns: var(--pf-aside-width, 280px) minmax(0, 1fr); }
+.postful-layout.pf-layout--sidebar-left .pf-layout-aside { order: -1; }
+
+.postful-layout .pf-layout-aside {
+	padding: var(--pf-aside-pad, 0);
+	border-radius: var(--pf-radius);
+	background: var(--pf-aside-bg, transparent);
+}
+.postful-layout .pf-layout-aside > *,
+.postful-layout .pf-layout-main > * { margin-top: 0; margin-bottom: 0; }
+.postful-layout .pf-layout-aside > * + *,
+.postful-layout .pf-layout-main > * + * { margin-top: 1.8em; }
+
+@media (max-width: 760px) {
+	.postful-layout.pf-layout--sidebar-right,
+	.postful-layout.pf-layout--sidebar-left { grid-template-columns: minmax(0, 1fr); }
+	.postful-layout.pf-layout--sidebar-left .pf-layout-aside { order: 0; }
 }
 
-/* ---- Entry ------------------------------------------------------------- */
+.pf-layout--stacked > * + *,
+.pf-layout--entry-only > * + * { margin-top: 1.6em; }
 
-.pf-current { max-width: 68ch; transition: opacity .2s ease; }
-.pf-current.is-loading { opacity: .4; }
+/* ---- Entry -------------------------------------------------------------- */
 
+.pf-current { transition: opacity .2s ease; }
+.pf-current.is-loading { opacity: .45; }
+
+.pf-entry {
+	padding: var(--pf-entry-pad, 0);
+	border-radius: var(--pf-radius);
+	background: var(--pf-entry-bg, transparent);
+}
+
+.pf-entry .pf-entry-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: .3em 1.2em;
+	margin: 0 0 var(--pf-field-gap, 1.1em);
+	padding-bottom: .7em;
+	border-bottom: 1px solid var(--pf-rule);
+}
+.pf-entry .pf-entry-title {
+	flex: 1 1 16em;
+	margin: 0;
+	color: var(--pf-title-color, inherit);
+	font-size: var(--pf-title-size, clamp(1.5em, 3.4vw, 2em));
+	font-weight: var(--pf-title-weight, 600);
+	line-height: 1.2;
+}
 .pf-entry .pf-date {
-	margin: 0 0 .6em;
-	font-size: .78em;
+	margin: 0;
+	color: var(--pf-date-color, inherit);
+	font-size: var(--pf-date-size, 1.05em);
+	font-style: var(--pf-date-style, italic);
 	font-weight: 600;
-	letter-spacing: .1em;
-	text-transform: uppercase;
-	opacity: .6;
+	white-space: nowrap;
 }
-.pf-entry h2.pf-field {
-	margin: 0 0 .9em;
-	font-size: clamp(1.6em, 4vw, 2.2em);
-	line-height: 1.18;
-	letter-spacing: -.01em;
-}
-.pf-entry .pf-field { margin: 0 0 1.2em; }
-.pf-entry .pf-field--richtext { line-height: 1.75; }
-.pf-entry .pf-field--richtext p { margin: 0 0 1.1em; }
-.pf-entry .pf-field img { max-width: 100%; height: auto; border-radius: 6px; }
 
-/* Devotional preset fields */
-.pf-entry .sp-field-verse_text {
-	margin-bottom: .35em;
-	padding-left: 1.1em;
-	border-left: 3px solid var(--pf-rule);
-	font-size: 1.12em;
-	font-style: italic;
+.pf-entry .pf-field { margin: 0 0 var(--pf-field-gap, 1.1em); }
+.pf-entry .pf-field:last-child { margin-bottom: 0; }
+.pf-entry .pf-field img { max-width: 100%; height: auto; border-radius: var(--pf-radius); }
+
+/* Display styles, chosen per field in the content type's setup. */
+.pf-entry .pf-style-highlight {
+	margin: 0 0 var(--pf-field-gap, 1.1em);
+	padding: 0 0 1em;
+	border: 0;
+	border-bottom: 1px solid var(--pf-rule);
+	font-size: var(--pf-hl-size, 1.08em);
+	font-style: var(--pf-hl-style, italic);
 	line-height: 1.6;
+	text-align: var(--pf-hl-align, center);
+	quotes: none;
 }
-.pf-entry .sp-field-verse_reference {
-	margin: 0 0 2em 1.35em;
-	font-size: .8em;
-	font-weight: 600;
-	letter-spacing: .08em;
-	text-transform: uppercase;
-	opacity: .65;
+.pf-entry .pf-style-highlight::before,
+.pf-entry .pf-style-highlight::after { content: none; }
+.pf-entry .pf-style-label {
+	font-size: var(--pf-label-size, .82em);
+	font-weight: 700;
+	letter-spacing: .04em;
+	text-align: var(--pf-label-align, center);
+	text-transform: var(--pf-label-case, uppercase);
 }
-.pf-entry .sp-field-scripture_reading {
-	margin-top: 2em;
-	padding-top: 1em;
-	border-top: 1px solid var(--pf-rule);
-	font-size: .95em;
-	opacity: .85;
+.pf-entry .pf-style-body {
+	font-size: var(--pf-body-size, inherit);
+	line-height: var(--pf-body-line, 1.75);
 }
+.pf-entry .pf-style-body p { margin: 0 0 1em; }
+.pf-entry .pf-style-body p:last-child { margin-bottom: 0; }
+.pf-entry h3.pf-style-title { margin: 1.4em 0 .5em; font-size: 1.2em; }
+
+.pf-entry--aside .pf-field { margin-bottom: .8em; }
 
 .postful .pf-message { margin: 0; font-style: italic; opacity: .7; }
 
-/* ---- Previous / next ---------------------------------------------------- */
+/* ---- Previous / Today / Next: plain text links ------------------------- */
 
-.pf-nav {
+.postful.pf-nav {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
-	justify-content: space-between;
-	gap: .5em;
-	max-width: 68ch;
-	margin: 2.2em 0;
+	justify-content: var(--pf-nav-align, center);
+	gap: .4em 1.8em;
 }
-.pf-nav .pf-nav-btn {
-	display: inline-flex;
-	align-items: center;
-	gap: .4em;
+.postful.pf-nav .pf-nav-btn {
 	margin: 0;
-	padding: .55em 1.15em;
-	border: 1px solid var(--pf-rule);
-	border-radius: 999px;
-	background: transparent;
-	color: inherit;
+	padding: .2em 0;
+	border: 0;
+	border-radius: 0;
+	background: none;
+	box-shadow: none;
+	color: var(--pf-nav-color, var(--pf-focus-c));
 	font: inherit;
-	font-size: .9em;
-	line-height: 1.2;
+	font-size: var(--pf-nav-size, 1em);
+	line-height: 1.4;
+	text-decoration: underline;
+	text-decoration-color: transparent;
+	text-underline-offset: 3px;
 	cursor: pointer;
-	transition: border-color .15s, background .15s;
+	transition: text-decoration-color .15s;
 }
-.pf-nav .pf-nav-btn:hover { border-color: currentColor; background: transparent; color: inherit; }
-.pf-nav .pf-nav-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
-.pf-nav .pf-nav-today { border-color: transparent; opacity: .75; }
-.pf-nav .pf-nav-today:hover { border-color: var(--pf-rule); opacity: 1; }
+.postful.pf-nav .pf-nav-btn:hover,
+.postful.pf-nav .pf-nav-btn:focus-visible { background: none; color: var(--pf-nav-color, var(--pf-focus-c)); text-decoration-color: currentColor; }
+.postful.pf-nav .pf-nav-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 
-/* ---- Index -------------------------------------------------------------- */
+/* ---- Month list: flush rows, colour for focus (no boxes, no padding) --- */
 
-.pf-index { max-width: 68ch; margin: 2.5em 0; }
-.pf-index .pf-index-title { margin: 0 0 .7em; font-size: 1.15em; }
+.pf-index .pf-index-title { margin: 0 0 .6em; font-size: var(--pf-month-size, 1em); font-weight: 600; }
 .pf-index .pf-month { border-top: 1px solid var(--pf-rule); }
 .pf-index .pf-month:last-of-type { border-bottom: 1px solid var(--pf-rule); }
 .pf-index summary {
 	display: flex;
-	align-items: center;
+	align-items: baseline;
 	gap: .8em;
-	padding: .85em .2em;
-	font-weight: 600;
+	padding: .6em 0;
+	font-size: var(--pf-month-size, 1em);
+	font-weight: 500;
 	cursor: pointer;
 	list-style: none;
+	transition: color .15s;
 }
 .pf-index summary::-webkit-details-marker { display: none; }
-.pf-index summary::after {
-	content: "";
-	width: .45em;
-	height: .45em;
-	margin-right: .3em;
-	border-right: 1.5px solid currentColor;
-	border-bottom: 1.5px solid currentColor;
-	opacity: .55;
-	transform: rotate(45deg) translateY(-2px);
-	transition: transform .2s;
-}
-.pf-index details[open] > summary::after { transform: rotate(-135deg) translateY(-1px); }
+.pf-index summary:hover,
+.pf-index details[open] > summary { color: var(--pf-focus-c); }
+.pf-index details[open] > summary { font-weight: 600; }
+.pf-index summary:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .pf-index .pf-month-name { flex: 1; text-transform: capitalize; }
 .pf-index .pf-month-count { font-size: .8em; font-weight: 400; opacity: .5; font-variant-numeric: tabular-nums; }
 
-.pf-index .pf-days { margin: 0 0 .9em; padding: 0; list-style: none; }
+.pf-index .pf-days { margin: 0 0 .6em; padding: 0; list-style: none; }
 .pf-index .pf-days li { margin: 0; padding: 0; }
 .pf-index .pf-day {
+	box-sizing: border-box;
 	display: flex;
 	align-items: baseline;
-	gap: 1em;
+	gap: .8em;
 	width: 100%;
 	margin: 0;
-	padding: .5em .7em;
+	padding: .3em 0;
 	border: 0;
-	border-radius: 8px;
-	background: transparent;
+	background: none;
+	box-shadow: none;
 	color: inherit;
 	font: inherit;
-	line-height: 1.4;
+	font-size: var(--pf-day-size, .95em);
+	line-height: 1.45;
 	text-align: left;
+	opacity: .78;
 	cursor: pointer;
+	transition: color .15s, opacity .15s;
 }
-.pf-index .pf-day:hover { background: var(--pf-tint); color: inherit; }
-.pf-index .pf-day:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
-.pf-index .pf-day.is-current { background: var(--pf-tint-2); font-weight: 600; }
-.pf-index .pf-day-num { min-width: 2ch; font-variant-numeric: tabular-nums; text-align: right; opacity: .55; }
+.pf-index .pf-day:hover { background: none; color: var(--pf-focus-c); opacity: 1; }
+.pf-index .pf-day:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.pf-index .pf-day.is-current { color: var(--pf-focus-c); font-weight: 600; opacity: 1; }
+.pf-index .pf-day-num { min-width: 2ch; font-variant-numeric: tabular-nums; text-align: right; opacity: .6; }
+.pf-index .pf-day.is-current .pf-day-num { opacity: 1; }
 .pf-index .pf-day-label {
 	position: absolute !important;
 	width: 1px;
@@ -160,9 +220,5 @@
 .postful-notice { padding: .8em 1em; border: 1px dashed currentColor; opacity: .8; font-size: .9em; }
 
 @media (prefers-reduced-motion: reduce) {
-	.pf-current, .pf-index summary::after { transition: none; }
+	.pf-current, .postful.pf-nav .pf-nav-btn { transition: none; }
 }
-
-/* Block themes set tight gaps between blocks; give the reader room. */
-.postful.pf-nav { margin-top: 2.4em; margin-bottom: 2.4em; }
-.postful.pf-index { margin-top: 3em; }
