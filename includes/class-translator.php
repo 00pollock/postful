@@ -57,9 +57,18 @@ final class Translator {
 		return in_array( $code, $known, true ) ? strtoupper( $code ) : '';
 	}
 
-	/** Fields included in machine drafts. */
+	/** Fields DeepL can draft: every translatable text field. */
 	public static function machine_fields( array $type ): array {
-		return array_values( array_filter( $type['fields'], fn( $f ) => ! empty( $f['machine'] ) && ! empty( $f['translatable'] ) ) );
+		return array_values( array_filter( $type['fields'], fn( $f ) => ! empty( $f['translatable'] ) && in_array( $f['type'], [ 'text', 'textarea', 'richtext' ], true ) ) );
+	}
+
+	/** DeepL could translate into this language (key or not). */
+	public static function supports( array $type, string $code ): bool {
+		$locales = Types::locales( $type );
+		return $code !== $type['default_lang']
+			&& '' !== self::source( $type['default_lang'] )
+			&& '' !== self::target( $code, $locales[ $code ] ?? $code )
+			&& self::machine_fields( $type );
 	}
 
 	public static function can_translate( array $type, string $code ): bool {

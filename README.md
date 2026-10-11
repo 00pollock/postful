@@ -16,16 +16,11 @@ Go to **Postful → Add content type**. The wizard has five steps:
 
 1. **Name.** Type the plural name ("Devotionals"). The singular name and internal key fill themselves in.
 2. **Structure.** Pick *Recurring day*.
-3. **Languages.** For example English (default) and Français.
-4. **Fields.** Name your own fields and choose how each one looks on the page:
-   - **Title.** The heading, with the entry's day shown beside it.
-   - **Highlight.** A centred passage between rules, e.g. a verse.
-   - **Label.** Small capitals, e.g. a reference.
-   - **Body.**
-   - **Plain.**
-5. **Layout.** Choose one of four layouts, decide what goes in the main area and what goes in the sidebar, and adjust sizes, colours and spacing with a live preview.
+3. **Languages.** English and Français (Canada).
+4. **Fields.** Name each part of an entry. The first field is the title. Every field can be written in each language; an empty translation shows the default language instead.
+5. **Style.** Style each field: size, weight, italic, capitals, alignment, colour, space below, and a line beside or above and below it. You can also style the page, the date, the navigation links and the month list. A live preview shows the result. Leave anything empty to use your theme's look.
 
-Entries are managed under the Postful menu. Each content type gets its own item there.
+Entries are managed under the Postful menu.
 
 ### 2. Add entries
 
@@ -36,17 +31,12 @@ You can write entries one at a time from **Postful → Devotionals → Add New**
 - **Empty cells.** These never overwrite existing content. Import English first and French later.
 - **Delimiters.** Semicolon-separated files from French Excel work as well as comma-separated ones.
 
-### 3. Translation drafts (optional, DeepL)
+### 3. Translations
 
-Add a DeepL API key under **Postful → Settings**. The free plan allows 500,000 characters a month. You then get:
+You can type translations yourself, or add a DeepL API key under **Postful → Settings** to get help. The free plan allows 500,000 characters a month.
 
-- a **Translate from English** button on each language column in the editor
-- a bulk **Translate into Français** option on the Import / export page
-
-How drafts work:
-- **Only empty fields are filled.** Nothing a person wrote is overwritten.
-- **Fields can opt out.** Turn off "Include in machine translation drafts" for a field (Fields → Options), e.g. Bible verses quoted from a set French translation.
-- **Drafts stay hidden until reviewed.** Every draft is marked **Needs review**, and visitors see the default language in its place. Tick **Reviewed** in the editor, or use the bulk action "Mark Français as reviewed" on the entries list.
+- **In the content screen,** each French field has a **Translate** link, and the French column has **Translate empty fields**. The text that arrives is ordinary editable text: change it as you like, and it goes live when you save.
+- **In bulk,** the Import / export page can fill every missing French field. Bulk translations are marked **Needs review** and stay hidden from visitors (they see English) until someone edits the entry, ticks **Reviewed**, or uses the bulk action "Mark Français (Canada) as reviewed".
 - **Nothing is sent automatically.** Text only goes to DeepL when someone clicks Translate.
 
 ### 4. Build the page
@@ -57,16 +47,7 @@ Create one page, for example `/reading/daily-devotional/`, and add a single shor
 [postful type="devotional"]
 ```
 
-**What it shows.** The shortcode displays today's entry, Previous / Today / Next links, and the month list, arranged by the type's layout:
-
-| Layout | Arrangement |
-|---|---|
-| Sidebar right | The entry on the left, and the sidebar on the right. |
-| Sidebar left | The same, mirrored. |
-| Stacked | Everything in one column. |
-| Entry only | Just the entry and the links. |
-
-**Overriding the layout.** To use a different layout on one page: `[postful type="devotional" layout="stacked"]`.
+**What it shows.** The page follows the AWMI layout. The entry reads in the main column: title, date, then your fields. Previous / Today / Next and the month list sit in a sidebar, which moves below the entry on phones.
 
 **How navigation works.** Clicking swaps the entry in place, and the address bar never changes, so a daily email can always link to this one page. Refreshing returns to today.
 
@@ -100,14 +81,7 @@ To check the French copy without changing browser settings, turn on **Postful �
 
 ### Styling
 
-The Style panel in the Layout step controls:
-- sizes, weights and colours for the title, day, highlight, label and body text
-- spacing, background and padding for the entry and sidebar
-- the navigation links and the month list
-
-Leave a value empty to use your theme's look.
-
-To style everything from your theme instead, turn off **Postful → Settings → Default styles**. Every field is wrapped in a class built from its key (`.sp-field-verse_reference`) and its style (`.pf-style-highlight`). For full control over the markup, the Layout step's Advanced section takes a template with `{field_key}` and `{date}` placeholders.
+Use the Style step for sizes, colours, spacing and lines. To style everything from your theme instead, turn off **Postful → Settings → Default styles**. Every field is wrapped in a class built from its key (`.sp-field-verse_reference`). For full control over the markup, the Style step's Advanced section takes a template with `{field_key}` and `{date}` placeholders.
 
 ### Fonts
 

@@ -51,8 +51,8 @@ final class Preset_Recurring_Day extends Preset {
 	/** A neutral start; the user names and adds fields in the wizard. */
 	public function default_fields(): array {
 		return [
-			[ 'key' => 'title', 'label' => __( 'Title', 'postful' ), 'type' => 'text', 'display' => 'title', 'required' => true, 'help' => '', 'translatable' => true, 'machine' => true, 'choices' => [] ],
-			[ 'key' => 'content', 'label' => __( 'Content', 'postful' ), 'type' => 'richtext', 'display' => 'body', 'required' => true, 'help' => '', 'translatable' => true, 'machine' => true, 'choices' => [] ],
+			[ 'key' => 'title', 'label' => __( 'Title', 'postful' ), 'type' => 'text', 'required' => true, 'help' => '', 'translatable' => true, 'choices' => [] ],
+			[ 'key' => 'content', 'label' => __( 'Content', 'postful' ), 'type' => 'richtext', 'required' => true, 'help' => '', 'translatable' => true, 'choices' => [] ],
 		];
 	}
 

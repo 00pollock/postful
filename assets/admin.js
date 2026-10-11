@@ -155,9 +155,8 @@
 		wizard.classList.toggle( 'is-first', n === 1 );
 		wizard.classList.toggle( 'is-last', n === steps.length );
 		errorEl.textContent = '';
-		if ( steps[ n - 1 ].querySelector( '[data-pf-placement]' ) ) {
-			buildPlacement();
-			renderPreview();
+		if ( steps[ n - 1 ].querySelector( '[data-pf-style]' ) ) {
+			onStyleStep();
 		}
 		var first = steps[ n - 1 ].querySelector( 'input:not([type=hidden]):not([readonly]):not([disabled])' );
 		if ( first && n === 1 ) {
@@ -368,7 +367,7 @@
 	langBox.addEventListener( 'change', syncLanguages );
 	syncLanguages();
 
-	/* Field builder */
+	/* Field builder: name, type, order, remove. Keys follow the name until saved. */
 	var list = wizard.querySelector( '[data-pf-fields]' );
 	var tpl = wizard.querySelector( '[data-pf-field-template]' );
 	var counter = 1000;
@@ -376,36 +375,13 @@
 	function bindRow( row ) {
 		var label = row.querySelector( '[data-pf-field-label]' );
 		var key = row.querySelector( '[data-pf-field-key]' );
-		var type = row.querySelector( '[data-pf-field-type]' );
-		var trans = row.querySelector( '[data-pf-translatable-wrap]' );
-		var more = row.querySelector( '[data-pf-more]' );
-		var panel = row.querySelector( '[data-pf-more-panel]' );
-		// Unsaved fields keep following their label until the key is edited by hand.
-		var dirty = key.readOnly || ( !! key.value && key.value !== slug( label.value, 40 ) );
+		var locked = key.hasAttribute( 'data-locked' );
+		var follows = ! locked && ( ! key.value || key.value === slug( label.value, 40 ) );
 
-		key.addEventListener( 'input', function () {
-			dirty = true;
-			key.value = key.value.toLowerCase().replace( /[^a-z0-9_]/g, '' );
-		} );
 		label.addEventListener( 'input', function () {
-			if ( ! dirty ) {
+			if ( follows ) {
 				key.value = slug( label.value, 40 );
 			}
-		} );
-		var transBox = trans.querySelector( 'input[type=checkbox]' );
-		var machine = row.querySelector( '[data-pf-machine-wrap]' );
-		var syncType = function () {
-			row.querySelector( '[data-pf-choices]' ).hidden = type.value !== 'select';
-			trans.style.visibility = type.value === 'toggle' ? 'hidden' : '';
-			machine.hidden = ! transBox.checked || [ 'text', 'textarea', 'richtext' ].indexOf( type.value ) === -1;
-		};
-		type.addEventListener( 'change', syncType );
-		transBox.addEventListener( 'change', syncType );
-		syncType();
-
-		more.addEventListener( 'click', function () {
-			panel.hidden = ! panel.hidden;
-			more.setAttribute( 'aria-expanded', String( ! panel.hidden ) );
 		} );
 		row.querySelector( '[data-pf-remove]' ).addEventListener( 'click', function () {
 			if ( row.hasAttribute( 'data-pf-locked' ) && ! window.confirm( i18n.removeLocked ) ) {
@@ -440,77 +416,19 @@
 		} );
 	} );
 
-	/* Layout step: Main / Sidebar per field, written back into each field row. */
-	var placement = wizard.querySelector( '[data-pf-placement]' );
-	function hasSidebar() {
-		var checked = wizard.querySelector( '[name=layout]:checked' );
-		return ! checked || /^sidebar_/.test( checked.value );
-	}
-	function syncPlacementNote() {
-		placement.querySelector( '[data-pf-placement-note]' ).hidden = hasSidebar();
-	}
-	/* Mirrors Types::default_display(): an unstyled first single-line field is the title. */
-	function effectiveDisplay( row ) {
-		var chosen = row.querySelector( '[data-pf-field-display]' ).value;
-		if ( chosen ) {
-			return chosen;
-		}
-		var type = row.querySelector( '[data-pf-field-type]' ).value;
-		var rows = Array.prototype.slice.call( wizard.querySelectorAll( '[data-pf-row]' ) );
-		var firstText = rows.filter( function ( r ) { return r.querySelector( '[data-pf-field-type]' ).value === 'text'; } )[ 0 ];
-		if ( type === 'text' && firstText === row ) {
-			return 'title';
-		}
-		return type === 'richtext' || type === 'textarea' ? 'body' : 'plain';
+	function fieldRows() {
+		return Array.prototype.slice.call( wizard.querySelectorAll( '[data-pf-row]' ) ).map( function ( row ) {
+			return {
+				key: row.querySelector( '[data-pf-field-key]' ).value,
+				label: row.querySelector( '[data-pf-field-label]' ).value.trim(),
+				type: row.querySelector( '[data-pf-field-type]' ).value
+			};
+		} ).filter( function ( f ) { return f.label && f.key; } );
 	}
 
-	function buildPlacement() {
-		var box = placement.querySelector( '[data-pf-place-fields]' );
-		box.textContent = '';
-		wizard.querySelectorAll( '[data-pf-row]' ).forEach( function ( row, i ) {
-			var label = row.querySelector( '[data-pf-field-label]' ).value.trim();
-			var region = row.querySelector( '[data-pf-field-region]' );
-			if ( ! label ) {
-				return;
-			}
-			if ( effectiveDisplay( row ) === 'title' ) {
-				region.value = 'main';
-				return; // The title always leads the main area.
-			}
-			var line = document.createElement( 'div' );
-			line.className = 'pf-place-row';
-			var name = document.createElement( 'span' );
-			name.className = 'pf-place-name';
-			name.textContent = label;
-			var seg = document.createElement( 'span' );
-			seg.className = 'pf-seg';
-			[ 'main', 'sidebar' ].forEach( function ( v ) {
-				var l = document.createElement( 'label' );
-				var input = document.createElement( 'input' );
-				input.type = 'radio';
-				input.name = 'pf_region_ui_' + i;
-				input.checked = region.value === v;
-				input.addEventListener( 'change', function () { region.value = v; } );
-				var span = document.createElement( 'span' );
-				span.textContent = i18n[ v ];
-				l.appendChild( input );
-				l.appendChild( span );
-				seg.appendChild( l );
-			} );
-			line.appendChild( name );
-			line.appendChild( seg );
-			box.appendChild( line );
-		} );
-		syncPlacementNote();
-	}
-	if ( placement ) {
-		wizard.querySelectorAll( '[name=layout]' ).forEach( function ( r ) {
-			r.addEventListener( 'change', syncPlacementNote );
-		} );
-	}
-
-	/* Style panel + live preview (uses the real front-end stylesheet). */
+	/* Style step: one group per field (first is the title), plus page groups. */
 	var stylePanel = wizard.querySelector( '[data-pf-style]' );
+	var fieldBox = wizard.querySelector( '[data-pf-field-styles]' );
 	var frame = wizard.querySelector( '[data-pf-preview]' );
 	var previewTimer;
 
@@ -520,7 +438,116 @@
 		return d.innerHTML;
 	}
 
-	function styleVars() {
+	function control( name, kind, value, label ) {
+		var wrap = document.createElement( 'label' );
+		wrap.className = 'pf-style-field';
+		var l = document.createElement( 'span' );
+		l.className = 'pf-style-label';
+		l.textContent = label;
+		wrap.appendChild( l );
+		var input;
+		if ( kind === 'color' ) {
+			var box = document.createElement( 'span' );
+			box.className = 'pf-color';
+			var swatch = document.createElement( 'input' );
+			swatch.type = 'color';
+			swatch.value = /^#[0-9a-f]{6}$/i.test( value ) ? value : '#000000';
+			swatch.setAttribute( 'data-pf-swatch', '' );
+			swatch.setAttribute( 'aria-label', label );
+			input = document.createElement( 'input' );
+			input.type = 'text';
+			input.className = 'pf-text pf-mono';
+			input.maxLength = 7;
+			input.placeholder = data.i18n.theme;
+			box.appendChild( swatch );
+			box.appendChild( input );
+			wrap.appendChild( box );
+		} else if ( typeof kind === 'object' ) {
+			input = document.createElement( 'select' );
+			input.className = 'pf-text';
+			var none = document.createElement( 'option' );
+			none.value = '';
+			none.textContent = data.i18n.themeDefault;
+			input.appendChild( none );
+			Object.keys( kind ).forEach( function ( v ) {
+				var o = document.createElement( 'option' );
+				o.value = v;
+				o.textContent = kind[ v ];
+				input.appendChild( o );
+			} );
+			wrap.appendChild( input );
+		} else {
+			var unit = document.createElement( 'span' );
+			unit.className = 'pf-unit';
+			input = document.createElement( 'input' );
+			input.type = 'number';
+			input.className = 'pf-text';
+			input.min = 0;
+			input.max = 2000;
+			input.placeholder = data.i18n.theme;
+			unit.appendChild( input );
+			var em = document.createElement( 'em' );
+			em.textContent = 'px';
+			unit.appendChild( em );
+			wrap.appendChild( unit );
+		}
+		input.name = name;
+		input.value = value || '';
+		input.setAttribute( 'data-kind', typeof kind === 'object' ? 'select' : kind );
+		return wrap;
+	}
+
+	function buildFieldStyles() {
+		// Keep values typed so far (fields may have been renamed or reordered).
+		fieldBox.querySelectorAll( '[name^="field_style"]' ).forEach( function ( input ) {
+			var m = input.name.match( /^field_style\[(\w+)\]\[(\w+)\]$/ );
+			if ( m ) {
+				data.fieldStyle[ m[ 1 ] ] = data.fieldStyle[ m[ 1 ] ] || {};
+				data.fieldStyle[ m[ 1 ] ][ m[ 2 ] ] = input.value;
+			}
+		} );
+		fieldBox.textContent = '';
+		fieldRows().forEach( function ( f, i ) {
+			var group = document.createElement( 'details' );
+			group.className = 'pf-style-group';
+			group.open = i === 0;
+			var sum = document.createElement( 'summary' );
+			sum.textContent = f.label + ( i === 0 ? ' (' + data.i18n.title + ')' : '' );
+			group.appendChild( sum );
+			var body = document.createElement( 'div' );
+			body.className = 'pf-style-fields';
+			var saved = data.fieldStyle[ f.key ] || {};
+			Object.keys( data.fieldProps ).forEach( function ( prop ) {
+				body.appendChild( control( 'field_style[' + f.key + '][' + prop + ']', data.fieldProps[ prop ][ 1 ], saved[ prop ], data.fieldProps[ prop ][ 0 ] ) );
+			} );
+			group.appendChild( body );
+			fieldBox.appendChild( group );
+		} );
+	}
+
+	function fieldCss( key ) {
+		var css = '';
+		var get = function ( prop ) {
+			var el = fieldBox.querySelector( '[name="field_style[' + key + '][' + prop + ']"]' );
+			return el ? el.value.trim() : '';
+		};
+		var map = { size: 'font-size:%px', weight: 'font-weight:%', italic: 'font-style:%', 'case': 'text-transform:%', align: 'text-align:%', color: 'color:%', space: 'margin-bottom:%px' };
+		Object.keys( map ).forEach( function ( prop ) {
+			var v = get( prop );
+			if ( v && ( prop !== 'color' || /^#([0-9a-f]{3}){1,2}$/i.test( v ) ) ) {
+				css += map[ prop ].replace( '%', v ) + ';';
+			}
+		} );
+		var frameStyle = get( 'frame' );
+		if ( frameStyle === 'left' ) {
+			css += 'border-left:3px solid var(--pf-rule);padding-left:1em;';
+		} else if ( frameStyle === 'around' ) {
+			css += 'border-top:1px solid var(--pf-rule);border-bottom:1px solid var(--pf-rule);padding:1em 0;';
+		}
+		return css;
+	}
+
+	function pageVars() {
 		var css = '';
 		stylePanel.querySelectorAll( '[data-pf-var]' ).forEach( function ( input ) {
 			var v = input.value.trim();
@@ -534,68 +561,27 @@
 	}
 
 	function previewHtml() {
-		var layoutEl = wizard.querySelector( '[name=layout]:checked' );
-		var layout = layoutEl ? layoutEl.value : 'sidebar_right';
-		var side = /^sidebar_/.test( layout );
-		var navEl = wizard.querySelector( '[name=nav_place]:checked' );
-		var idxEl = wizard.querySelector( '[name=index_place]:checked' );
-		var nav = navEl ? navEl.value : 'sidebar';
-		var idx = layout === 'entry_only' ? 'hidden' : ( idxEl ? idxEl.value : 'sidebar' );
-		if ( ! side && nav === 'sidebar' ) { nav = 'below'; }
-		if ( ! side && idx === 'sidebar' ) { idx = 'below'; }
-
-		var main = '';
-		var aside = '';
-		var title = '';
-		wizard.querySelectorAll( '[data-pf-row]' ).forEach( function ( row, i ) {
-			var label = row.querySelector( '[data-pf-field-label]' ).value.trim();
-			if ( ! label ) {
-				return;
-			}
-			var display = effectiveDisplay( row );
-			if ( display === 'title' && ! title ) {
-				title = label;
-				return;
-			}
-			var html;
-			if ( display === 'body' ) {
-				html = '<div class="pf-field pf-style-body"><p>' + esc( label ) + ': this is how longer text will read. Paragraphs keep comfortable spacing so a whole page stays easy to follow.</p><p>A second paragraph shows the gap between paragraphs.</p></div>';
-			} else if ( display === 'highlight' ) {
-				html = '<blockquote class="pf-field pf-style-highlight">' + esc( label ) + ': a short passage that should stand out.</blockquote>';
-			} else if ( display === 'label' ) {
-				html = '<div class="pf-field pf-style-label">' + esc( label ) + '</div>';
-			} else {
-				html = '<div class="pf-field pf-style-' + display + '">' + esc( label ) + ': sample text</div>';
-			}
-			var region = row.querySelector( '[data-pf-field-region]' ).value;
-			if ( side && region === 'sidebar' ) {
-				aside += html;
-			} else {
-				main += html;
-			}
-		} );
-
-		var head = '<header class="pf-entry-head"><h2 class="pf-entry-title">' + esc( title || 'Title' ) + '</h2><p class="pf-date">March 5</p></header>';
-		var entry = '<div class="postful pf-current"><article class="pf-entry"><div class="pf-lang">' + head + main + '</div></article></div>';
-		var asideEntry = aside ? '<div class="postful pf-current"><article class="pf-entry pf-entry--aside"><div class="pf-lang">' + aside + '</div></article></div>' : '';
-		var navHtml = '<nav class="postful pf-nav"><button class="pf-nav-btn">Previous</button><button class="pf-nav-btn">Today</button><button class="pf-nav-btn">Next</button></nav>';
-		var months = [ 'January', 'February', 'March', 'April' ];
-		var index = '<div class="postful pf-index"><h2 class="pf-index-title">Browse by month</h2>' + months.map( function ( m ) {
-			var open = m === 'March';
-			var days = open ? '<ol class="pf-days">' + [ 4, 5, 6 ].map( function ( d ) {
-				return '<li><button class="pf-day' + ( d === 5 ? ' is-current' : '' ) + '"><span class="pf-day-num">' + d + '</span><span class="pf-day-text">' + esc( title || 'Title' ) + ' ' + d + '</span></button></li>';
+		var fields = fieldRows();
+		var title = fields[ 0 ] && ( fields[ 0 ].type === 'text' || fields[ 0 ].type === 'textarea' ) ? fields[ 0 ] : null;
+		var head = '<header class="pf-entry-head">' + ( title ? '<h2 class="pf-entry-title" style="' + esc( fieldCss( title.key ) ) + '">' + esc( title.label ) + '</h2>' : '' ) + '<p class="pf-date">October 10</p></header>';
+		var body = fields.slice( title ? 1 : 0 ).map( function ( f ) {
+			var text = f.type === 'richtext' || f.type === 'textarea'
+				? '<p>' + esc( f.label ) + ': longer text reads like this, with comfortable spacing between lines so a whole page stays easy to follow.</p><p>A second paragraph shows the gap between paragraphs.</p>'
+				: esc( f.label ) + ': sample text';
+			return '<div class="pf-field" style="' + esc( fieldCss( f.key ) ) + '">' + text + '</div>';
+		} ).join( '' );
+		var entry = '<div class="postful pf-current"><article class="pf-entry"><div class="pf-lang">' + head + body + '</div></article></div>';
+		var nav = '<nav class="postful pf-nav"><button class="pf-nav-btn">Previous</button><button class="pf-nav-btn">Today</button><button class="pf-nav-btn">Next</button></nav>';
+		var index = '<div class="postful pf-index"><h2 class="pf-index-title">Browse by month</h2>' + [ 'September', 'October', 'November' ].map( function ( m ) {
+			var open = m === 'October';
+			var days = open ? '<ol class="pf-days">' + [ 9, 10, 11 ].map( function ( d ) {
+				return '<li><button class="pf-day' + ( d === 10 ? ' is-current' : '' ) + '"><span class="pf-day-num">' + d + '</span><span class="pf-day-text">' + esc( title ? title.label : 'Entry' ) + ' ' + d + '</span></button></li>';
 			} ).join( '' ) + '</ol>' : '';
 			return '<details class="pf-month"' + ( open ? ' open' : '' ) + '><summary><span class="pf-month-name">' + m + '</span><span class="pf-month-count">' + ( open ? 3 : 30 ) + '</span></summary>' + days + '</details>';
 		} ).join( '' ) + '</div>';
-
-		var mainCol = ( nav === 'above' ? navHtml : '' ) + entry + ( nav === 'below' ? navHtml : '' ) + ( idx === 'below' ? index : '' );
-		var inner = side
-			? '<div class="pf-layout-main">' + mainCol + '</div><aside class="pf-layout-aside">' + asideEntry + ( nav === 'sidebar' ? navHtml : '' ) + ( idx === 'sidebar' ? index : '' ) + '</aside>'
-			: mainCol;
-
 		return '<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="' + frame.getAttribute( 'data-css' ) + '">' +
 			'<style>body{margin:20px;font:15px/1.6 Georgia,"Times New Roman",serif;color:#1f2328;background:#fff}h2{font-family:system-ui,sans-serif}</style></head><body>' +
-			'<div class="postful-layout pf-layout--' + layout.replace( '_', '-' ) + '" style="' + esc( styleVars() ) + '">' + inner + '</div></body></html>';
+			'<div class="postful-layout pf-layout--sidebar-right" style="' + esc( pageVars() ) + '"><div class="pf-layout-main">' + entry + '</div><aside class="pf-layout-aside">' + nav + index + '</aside></div></body></html>';
 	}
 
 	function renderPreview() {
@@ -613,11 +599,16 @@
 		}, 120 );
 	}
 
+	function onStyleStep() {
+		buildFieldStyles();
+		renderPreview();
+	}
+
 	if ( stylePanel ) {
 		stylePanel.addEventListener( 'input', function ( e ) {
 			var color = e.target.closest( '.pf-color' );
 			if ( color ) {
-				var text = color.querySelector( '[data-kind=color]' );
+				var text = color.querySelector( 'input[type=text]' );
 				var swatch = color.querySelector( '[data-pf-swatch]' );
 				if ( e.target === swatch ) {
 					text.value = swatch.value;
@@ -629,13 +620,9 @@
 		} );
 		stylePanel.addEventListener( 'change', renderPreview );
 		stylePanel.querySelector( '[data-pf-style-reset]' ).addEventListener( 'click', function () {
-			stylePanel.querySelectorAll( '[data-pf-var]' ).forEach( function ( input ) { input.value = ''; } );
+			stylePanel.querySelectorAll( 'input[type=text], input[type=number], select' ).forEach( function ( input ) { input.value = ''; } );
 			renderPreview();
 		} );
-		wizard.querySelectorAll( '[name=layout], [name=nav_place], [name=index_place]' ).forEach( function ( r ) {
-			r.addEventListener( 'change', renderPreview );
-		} );
-		placement.addEventListener( 'change', renderPreview );
 	}
 
 	show( Math.min( steps.length, Math.max( 1, parseInt( wizard.getAttribute( 'data-pf-start' ), 10 ) || 1 ) ) );

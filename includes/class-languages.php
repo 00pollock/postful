@@ -11,35 +11,23 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Languages {
 
-	/** Common WordPress locales → native name. */
+	/** Languages offered in setup. Kept short on purpose; more can be added later. */
 	public static function common(): array {
 		return [
 			'en_US' => 'English',
-			'en_GB' => 'English (UK)',
-			'fr_FR' => 'Français',
 			'fr_CA' => 'Français (Canada)',
+		];
+	}
+
+	/** Names for any locale a type may already use (older configs, JSON imports). */
+	private static function known(): array {
+		return self::common() + [
+			'en_CA' => 'English',
+			'en_GB' => 'English',
+			'fr_FR' => 'Français',
 			'es_ES' => 'Español',
-			'es_MX' => 'Español (México)',
-			'pt_BR' => 'Português (Brasil)',
-			'pt_PT' => 'Português',
+			'pt_BR' => 'Português',
 			'de_DE' => 'Deutsch',
-			'it_IT' => 'Italiano',
-			'nl_NL' => 'Nederlands',
-			'sw'    => 'Kiswahili',
-			'rw'    => 'Kinyarwanda',
-			'yor'   => 'Yorùbá',
-			'am'    => 'አማርኛ',
-			'ar'    => 'العربية',
-			'ru_RU' => 'Русский',
-			'uk'    => 'Українська',
-			'pl_PL' => 'Polski',
-			'ro_RO' => 'Română',
-			'hi_IN' => 'हिन्दी',
-			'id_ID' => 'Bahasa Indonesia',
-			'tl'    => 'Tagalog',
-			'zh_CN' => '简体中文',
-			'ja'    => '日本語',
-			'ko_KR' => '한국어',
 		];
 	}
 
@@ -59,8 +47,7 @@ final class Languages {
 	}
 
 	public static function name( string $locale ): string {
-		$common = self::common();
-		return $common[ $locale ] ?? $locale;
+		return self::known()[ $locale ] ?? $locale;
 	}
 
 	/** Admin-facing labels for the plugin-generated strings. */

@@ -29,7 +29,7 @@ final class List_Screen {
 		add_filter( "bulk_actions-edit-{$pt}", [ self::class, 'bulk_actions' ] );
 		add_filter( "handle_bulk_actions-edit-{$pt}", [ self::class, 'handle_bulk' ], 10, 3 );
 		add_action( 'admin_notices', [ self::class, 'bulk_notice' ] );
-		add_action( 'admin_enqueue_scripts', fn() => wp_enqueue_style( 'postful-admin', POSTFUL_URL . 'assets/admin.css', [], POSTFUL_VERSION ) );
+		add_action( 'admin_enqueue_scripts', fn() => wp_enqueue_style( 'postful-admin', POSTFUL_URL . 'assets/admin.css', [], Plugin::ver( 'admin.css' ) ) );
 	}
 
 	private static function type(): ?array {

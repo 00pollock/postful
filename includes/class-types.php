@@ -32,87 +32,116 @@ final class Types {
 			'nav_place'    => 'sidebar',
 			'index_place'  => 'sidebar',
 			'style'        => [],
+			'field_style'  => [],
 		];
 	}
 
 	/**
-	 * Style panel controls, grouped. Each maps to a CSS custom property read by
-	 * front.css; an empty value means "use the theme / default".
-	 * kind: size (px), number (unitless), color (hex), or an options array.
+	 * Page-level Style controls, grouped. Each maps to a CSS custom property read
+	 * by front.css; an empty value means "use the theme / default".
+	 * kind: size (px), color (hex), or an options array.
 	 */
 	public static function style_controls(): array {
 		$size  = 'size';
 		$color = 'color';
+		$case  = [ 'uppercase' => __( 'CAPITALS', 'postful' ), 'none' => __( 'As typed', 'postful' ) ];
+		$align = [ 'flex-start' => __( 'Left', 'postful' ), 'center' => __( 'Centre', 'postful' ), 'space-between' => __( 'Spread', 'postful' ) ];
 		return [
-			'page'      => [ __( 'Page', 'postful' ), [
+			'page'  => [ __( 'Page', 'postful' ), [
 				'width'       => [ __( 'Maximum width', 'postful' ), $size, '--pf-width' ],
 				'gap'         => [ __( 'Space between columns', 'postful' ), $size, '--pf-gap' ],
 				'aside_width' => [ __( 'Sidebar width', 'postful' ), $size, '--pf-aside-width' ],
 				'text_size'   => [ __( 'Text size', 'postful' ), $size, '--pf-text-size' ],
 				'text_color'  => [ __( 'Text colour', 'postful' ), $color, '--pf-text' ],
-				'accent'      => [ __( 'Link colour', 'postful' ), $color, '--pf-accent' ],
+				'accent'      => [ __( 'Link and highlight colour', 'postful' ), $color, '--pf-accent' ],
 			] ],
-			'title'     => [ __( 'Title', 'postful' ), [
-				'title_size'   => [ __( 'Size', 'postful' ), $size, '--pf-title-size' ],
-				'title_weight' => [ __( 'Weight', 'postful' ), [ '400' => __( 'Regular', 'postful' ), '500' => __( 'Medium', 'postful' ), '600' => __( 'Semibold', 'postful' ), '700' => __( 'Bold', 'postful' ) ], '--pf-title-weight' ],
-				'title_color'  => [ __( 'Colour', 'postful' ), $color, '--pf-title-color' ],
-			] ],
-			'date'      => [ __( 'Day', 'postful' ), [
+			'date'  => [ __( 'Date', 'postful' ), [
 				'date_size'  => [ __( 'Size', 'postful' ), $size, '--pf-date-size' ],
-				'date_style' => [ __( 'Style', 'postful' ), [ 'italic' => __( 'Italic', 'postful' ), 'normal' => __( 'Upright', 'postful' ) ], '--pf-date-style' ],
+				'date_case'  => [ __( 'Letters', 'postful' ), $case, '--pf-date-case' ],
 				'date_color' => [ __( 'Colour', 'postful' ), $color, '--pf-date-color' ],
+				'date_space' => [ __( 'Space below', 'postful' ), $size, '--pf-date-space' ],
 			] ],
-			'highlight' => [ __( 'Highlight fields', 'postful' ), [
-				'hl_size'  => [ __( 'Size', 'postful' ), $size, '--pf-hl-size' ],
-				'hl_style' => [ __( 'Style', 'postful' ), [ 'italic' => __( 'Italic', 'postful' ), 'normal' => __( 'Upright', 'postful' ) ], '--pf-hl-style' ],
-				'hl_align' => [ __( 'Alignment', 'postful' ), [ 'center' => __( 'Centre', 'postful' ), 'left' => __( 'Left', 'postful' ) ], '--pf-hl-align' ],
-			] ],
-			'label'     => [ __( 'Label fields', 'postful' ), [
-				'label_size'  => [ __( 'Size', 'postful' ), $size, '--pf-label-size' ],
-				'label_case'  => [ __( 'Letters', 'postful' ), [ 'uppercase' => __( 'CAPITALS', 'postful' ), 'none' => __( 'As typed', 'postful' ) ], '--pf-label-case' ],
-				'label_align' => [ __( 'Alignment', 'postful' ), [ 'center' => __( 'Centre', 'postful' ), 'left' => __( 'Left', 'postful' ) ], '--pf-label-align' ],
-			] ],
-			'body'      => [ __( 'Body fields', 'postful' ), [
-				'body_size' => [ __( 'Size', 'postful' ), $size, '--pf-body-size' ],
-				'body_line' => [ __( 'Line spacing', 'postful' ), 'number', '--pf-body-line' ],
-			] ],
-			'spacing'   => [ __( 'Entry spacing', 'postful' ), [
-				'field_gap' => [ __( 'Space between fields', 'postful' ), $size, '--pf-field-gap' ],
-				'entry_pad' => [ __( 'Inner padding', 'postful' ), $size, '--pf-entry-pad' ],
-				'entry_bg'  => [ __( 'Background', 'postful' ), $color, '--pf-entry-bg' ],
-			] ],
-			'sidebar'   => [ __( 'Sidebar', 'postful' ), [
-				'aside_pad' => [ __( 'Inner padding', 'postful' ), $size, '--pf-aside-pad' ],
-				'aside_bg'  => [ __( 'Background', 'postful' ), $color, '--pf-aside-bg' ],
-			] ],
-			'nav'       => [ __( 'Previous / Today / Next', 'postful' ), [
+			'nav'   => [ __( 'Previous / Today / Next', 'postful' ), [
 				'nav_size'  => [ __( 'Size', 'postful' ), $size, '--pf-nav-size' ],
 				'nav_color' => [ __( 'Colour', 'postful' ), $color, '--pf-nav-color' ],
-				'nav_align' => [ __( 'Alignment', 'postful' ), [ 'center' => __( 'Centre', 'postful' ), 'space-between' => __( 'Spread', 'postful' ), 'flex-start' => __( 'Left', 'postful' ) ], '--pf-nav-align' ],
+				'nav_align' => [ __( 'Alignment', 'postful' ), $align, '--pf-nav-align' ],
 			] ],
-			'index'     => [ __( 'Month list', 'postful' ), [
+			'index' => [ __( 'Month list', 'postful' ), [
 				'month_size' => [ __( 'Month size', 'postful' ), $size, '--pf-month-size' ],
 				'day_size'   => [ __( 'Day size', 'postful' ), $size, '--pf-day-size' ],
-				'index_line' => [ __( 'Border colour', 'postful' ), $color, '--pf-index-line' ],
+				'index_line' => [ __( 'Line colour', 'postful' ), $color, '--pf-index-line' ],
 			] ],
 		];
+	}
+
+	/** Per-field style properties (Style step → each field). */
+	public static function field_style_props(): array {
+		return [
+			'size'   => [ __( 'Size', 'postful' ), 'size' ],
+			'weight' => [ __( 'Weight', 'postful' ), [ '400' => __( 'Regular', 'postful' ), '500' => __( 'Medium', 'postful' ), '600' => __( 'Semibold', 'postful' ), '700' => __( 'Bold', 'postful' ) ] ],
+			'italic' => [ __( 'Style', 'postful' ), [ 'normal' => __( 'Upright', 'postful' ), 'italic' => __( 'Italic', 'postful' ) ] ],
+			'case'   => [ __( 'Letters', 'postful' ), [ 'none' => __( 'As typed', 'postful' ), 'uppercase' => __( 'CAPITALS', 'postful' ) ] ],
+			'align'  => [ __( 'Alignment', 'postful' ), [ 'left' => __( 'Left', 'postful' ), 'center' => __( 'Centre', 'postful' ) ] ],
+			'color'  => [ __( 'Colour', 'postful' ), 'color' ],
+			'space'  => [ __( 'Space below', 'postful' ), 'size' ],
+			'frame'  => [ __( 'Line', 'postful' ), [ 'none' => __( 'None', 'postful' ), 'left' => __( 'Line on the left', 'postful' ), 'around' => __( 'Lines above and below', 'postful' ) ] ],
+		];
+	}
+
+	/** One validated value: numbers for sizes, hex for colours, listed options only. */
+	private static function style_value( $kind, $v ): ?string {
+		$v = is_scalar( $v ) ? trim( (string) $v ) : '';
+		if ( '' === $v ) {
+			return null;
+		}
+		if ( 'size' === $kind ) {
+			return is_numeric( $v ) && $v >= 0 && $v <= 2000 ? (string) ( 0 + $v ) : null;
+		}
+		if ( 'color' === $kind ) {
+			return sanitize_hex_color( $v ) ?: null;
+		}
+		return is_array( $kind ) && isset( $kind[ $v ] ) ? $v : null;
+	}
+
+	/** @param array $fields sanitized fields; styles for unknown keys are dropped. */
+	public static function sanitize_field_style( $in, array $fields ): array {
+		$out = [];
+		foreach ( $fields as $field ) {
+			$row = is_array( $in ) && is_array( $in[ $field['key'] ] ?? null ) ? $in[ $field['key'] ] : [];
+			foreach ( self::field_style_props() as $prop => [ , $kind ] ) {
+				$v = self::style_value( $kind, $row[ $prop ] ?? '' );
+				if ( null !== $v ) {
+					$out[ $field['key'] ][ $prop ] = $v;
+				}
+			}
+		}
+		return $out;
+	}
+
+	/** Inline CSS for one field, from validated values only. */
+	public static function field_css( array $type, string $field_key ): string {
+		$st  = $type['field_style'][ $field_key ] ?? [];
+		$css = '';
+		$map = [ 'size' => 'font-size:%spx', 'weight' => 'font-weight:%s', 'italic' => 'font-style:%s', 'case' => 'text-transform:%s', 'align' => 'text-align:%s', 'color' => 'color:%s', 'space' => 'margin-bottom:%spx' ];
+		foreach ( $map as $prop => $rule ) {
+			if ( isset( $st[ $prop ] ) ) {
+				$css .= sprintf( $rule, $st[ $prop ] ) . ';';
+			}
+		}
+		if ( 'left' === ( $st['frame'] ?? '' ) ) {
+			$css .= 'border-left:3px solid var(--pf-rule);padding-left:1em;';
+		} elseif ( 'around' === ( $st['frame'] ?? '' ) ) {
+			$css .= 'border-top:1px solid var(--pf-rule);border-bottom:1px solid var(--pf-rule);padding:1em 0;';
+		}
+		return $css;
 	}
 
 	public static function sanitize_style( $in ): array {
 		$out = [];
 		foreach ( self::style_controls() as [ , $controls ] ) {
 			foreach ( $controls as $key => [ , $kind ] ) {
-				$v = trim( (string) ( is_array( $in ) ? ( $in[ $key ] ?? '' ) : '' ) );
-				if ( '' === $v ) {
-					continue;
-				}
-				if ( 'size' === $kind && is_numeric( $v ) && $v >= 0 && $v <= 2000 ) {
-					$out[ $key ] = (string) ( 0 + $v );
-				} elseif ( 'number' === $kind && is_numeric( $v ) && $v > 0 && $v <= 5 ) {
-					$out[ $key ] = (string) ( 0 + $v );
-				} elseif ( 'color' === $kind && sanitize_hex_color( $v ) ) {
-					$out[ $key ] = sanitize_hex_color( $v );
-				} elseif ( is_array( $kind ) && isset( $kind[ $v ] ) ) {
+				$v = self::style_value( $kind, is_array( $in ) ? ( $in[ $key ] ?? '' ) : '' );
+				if ( null !== $v ) {
 					$out[ $key ] = $v;
 				}
 			}
@@ -252,20 +281,14 @@ final class Types {
 	/** The field that feeds post_title: the first single-line field. */
 	/** The field shown as the entry's heading: styled Title (explicitly or by default). */
 	public static function header_field( array $type ): ?array {
-		foreach ( $type['fields'] as $field ) {
-			if ( 'title' === ( $field['display'] ?? '' ) ) {
-				return $field;
-			}
-		}
-		return null;
+		$first = $type['fields'][0] ?? null;
+		return $first && in_array( $first['type'], [ 'text', 'textarea' ], true ) ? $first : null;
 	}
 
 	/** The field that feeds post_title: a Title-styled field, else the first single line. */
 	public static function title_field( array $type ): ?array {
-		foreach ( $type['fields'] as $field ) {
-			if ( 'title' === ( $field['display'] ?? '' ) && 'text' === $field['type'] ) {
-				return $field;
-			}
+		if ( self::header_field( $type ) ) {
+			return self::header_field( $type );
 		}
 		foreach ( $type['fields'] as $field ) {
 			if ( 'text' === $field['type'] ) {
@@ -451,6 +474,7 @@ final class Types {
 		$out['nav_place']   = isset( self::places()['nav'][ $str( $in['nav_place'] ?? '' ) ] ) ? $in['nav_place'] : 'sidebar';
 		$out['index_place'] = isset( self::places()['index'][ $str( $in['index_place'] ?? '' ) ] ) ? $in['index_place'] : 'sidebar';
 		$out['style']       = self::sanitize_style( $in['style'] ?? [] );
+		$out['field_style'] = self::sanitize_field_style( $in['field_style'] ?? [], $out['fields'] );
 
 		foreach ( array_keys( $codes ) as $code ) {
 			foreach ( array_keys( Languages::string_keys() ) as $skey ) {
@@ -502,7 +526,9 @@ final class Types {
 
 			$row  = array_map( fn( $v ) => is_scalar( $v ) || is_array( $v ) ? $v : '', $row );
 			$type = is_string( $row['type'] ?? null ) && isset( $types[ $row['type'] ] ) ? $row['type'] : 'text';
-			$translatable = 'toggle' !== $type && ! empty( $row['translatable'] );
+			// Every new field can be translated (an empty translation falls back to
+			// the default language). Saved fields keep their storage shape.
+			$translatable = 'toggle' !== $type;
 			if ( isset( $saved[ $key ] ) ) {
 				$translatable = ! empty( $saved[ $key ]['translatable'] );
 				if ( $translatable && 'toggle' === $type ) {
@@ -516,22 +542,13 @@ final class Types {
 				$choices = array_values( array_filter( array_map( 'sanitize_text_field', $raw ), 'strlen' ) );
 			}
 
-			$display = is_string( $row['display'] ?? null ) && isset( self::display_styles()[ $row['display'] ] )
-				? $row['display']
-				: self::default_display( $type, ! array_filter( $out, fn( $f ) => 'text' === $f['type'] ) );
-
 			$out[] = [
 				'key'          => $key,
 				'label'        => $label,
 				'type'         => $type,
-				'display'      => $display,
-				// Sidebar layouts only; the title always stays in the main area.
-				'region'       => ( $row['region'] ?? '' ) === 'sidebar' && 'title' !== $display ? 'sidebar' : 'main',
 				'required'     => ! empty( $row['required'] ),
 				'help'         => sanitize_text_field( $row['help'] ?? '' ),
 				'translatable' => $translatable,
-				// Included in "Translate from …" drafts. Off for e.g. Bible verses.
-				'machine'      => $translatable && in_array( $type, [ 'text', 'textarea', 'richtext' ], true ) && ! empty( $row['machine'] ),
 				'choices'      => $choices,
 			];
 		}

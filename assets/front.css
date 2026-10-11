@@ -32,11 +32,6 @@
 .postful-layout.pf-layout--sidebar-left { grid-template-columns: var(--pf-aside-width, 280px) minmax(0, 1fr); }
 .postful-layout.pf-layout--sidebar-left .pf-layout-aside { order: -1; }
 
-.postful-layout .pf-layout-aside {
-	padding: var(--pf-aside-pad, 0);
-	border-radius: var(--pf-radius);
-	background: var(--pf-aside-bg, transparent);
-}
 .postful-layout .pf-layout-aside > *,
 .postful-layout .pf-layout-main > * { margin-top: 0; margin-bottom: 0; }
 .postful-layout .pf-layout-aside > * + *,
@@ -56,73 +51,32 @@
 .pf-current { transition: opacity .2s ease; }
 .pf-current.is-loading { opacity: .45; }
 
-.pf-entry {
-	padding: var(--pf-entry-pad, 0);
-	border-radius: var(--pf-radius);
-	background: var(--pf-entry-bg, transparent);
-}
-
-.pf-entry .pf-entry-head {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: baseline;
-	justify-content: space-between;
-	gap: .3em 1.2em;
-	margin: 0 0 var(--pf-field-gap, 1.1em);
-	padding-bottom: .7em;
-	border-bottom: 1px solid var(--pf-rule);
-}
+.pf-entry .pf-entry-head { margin: 0 0 1.2em; }
 .pf-entry .pf-entry-title {
-	flex: 1 1 16em;
-	margin: 0;
-	color: var(--pf-title-color, inherit);
-	font-size: var(--pf-title-size, clamp(1.5em, 3.4vw, 2em));
-	font-weight: var(--pf-title-weight, 600);
+	margin: 0 0 .35em;
+	font-size: clamp(1.6em, 3.4vw, 2.1em);
+	font-weight: 600;
 	line-height: 1.2;
 }
+/* The day, beneath the title (AWMI style): small, spaced capitals, muted. */
 .pf-entry .pf-date {
-	margin: 0;
+	margin: 0 0 var(--pf-date-space, 0);
 	color: var(--pf-date-color, inherit);
-	font-size: var(--pf-date-size, 1.05em);
-	font-style: var(--pf-date-style, italic);
+	font-size: var(--pf-date-size, .8em);
 	font-weight: 600;
-	white-space: nowrap;
+	letter-spacing: .08em;
+	text-transform: var(--pf-date-case, uppercase);
+	opacity: .6;
 }
 
-.pf-entry .pf-field { margin: 0 0 var(--pf-field-gap, 1.1em); }
+/* Fields: neutral by default; each field's look comes from the Style step. */
+.pf-entry .pf-field { margin: 0 0 1.1em; }
 .pf-entry .pf-field:last-child { margin-bottom: 0; }
+.pf-entry .pf-field p { margin: 0 0 1em; }
+.pf-entry .pf-field p:last-child { margin-bottom: 0; }
+.pf-entry .pf-field--richtext,
+.pf-entry .pf-field--textarea { line-height: 1.7; }
 .pf-entry .pf-field img { max-width: 100%; height: auto; border-radius: var(--pf-radius); }
-
-/* Display styles, chosen per field in the content type's setup. */
-.pf-entry .pf-style-highlight {
-	margin: 0 0 var(--pf-field-gap, 1.1em);
-	padding: 0 0 1em;
-	border: 0;
-	border-bottom: 1px solid var(--pf-rule);
-	font-size: var(--pf-hl-size, 1.08em);
-	font-style: var(--pf-hl-style, italic);
-	line-height: 1.6;
-	text-align: var(--pf-hl-align, center);
-	quotes: none;
-}
-.pf-entry .pf-style-highlight::before,
-.pf-entry .pf-style-highlight::after { content: none; }
-.pf-entry .pf-style-label {
-	font-size: var(--pf-label-size, .82em);
-	font-weight: 700;
-	letter-spacing: .04em;
-	text-align: var(--pf-label-align, center);
-	text-transform: var(--pf-label-case, uppercase);
-}
-.pf-entry .pf-style-body {
-	font-size: var(--pf-body-size, inherit);
-	line-height: var(--pf-body-line, 1.75);
-}
-.pf-entry .pf-style-body p { margin: 0 0 1em; }
-.pf-entry .pf-style-body p:last-child { margin-bottom: 0; }
-.pf-entry h3.pf-style-title { margin: 1.4em 0 .5em; font-size: 1.2em; }
-
-.pf-entry--aside .pf-field { margin-bottom: .8em; }
 
 .postful .pf-message { margin: 0; font-style: italic; opacity: .7; }
 

@@ -39,6 +39,15 @@ final class Plugin {
 	}
 
 	/**
+	 * Asset version = plugin version + file modification time, so browsers and
+	 * caches always pick up a changed stylesheet or script.
+	 */
+	public static function ver( string $asset ): string {
+		$file = POSTFUL_DIR . 'assets/' . $asset;
+		return POSTFUL_VERSION . ( is_file( $file ) ? '.' . filemtime( $file ) : '' );
+	}
+
+	/**
 	 * Inline SVG used for the admin menu icon (no external assets).
 	 */
 	public static function menu_icon(): string {

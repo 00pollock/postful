@@ -169,78 +169,90 @@
 		}
 	}
 
-	document.querySelectorAll( '[data-pf-translate]' ).forEach( function ( btn ) {
-		var lang = btn.getAttribute( 'data-pf-translate' );
-		var label = btn.textContent;
+	function hasContent( html ) {
+		var tmp = document.createElement( 'div' );
+		tmp.innerHTML = html;
+		return !! ( ( tmp.textContent || '' ).trim() || tmp.querySelector( 'img, iframe, video, audio' ) );
+	}
 
-		btn.addEventListener( 'click', function () {
-			var body = new FormData();
-			body.append( 'action', 'postful_translate' );
-			body.append( '_wpnonce', cfg.nonce );
-			body.append( 'post_id', cfg.postId );
-			body.append( 'lang', lang );
+	/**
+	 * Translate fields of one language from the default column. What lands here
+	 * is ordinary editable text: it goes live when the entry is saved.
+	 *
+	 * @param {string[]} keys      Fields to translate.
+	 * @param {boolean}  overwrite Replace existing text (single-field link) or only fill gaps (column button).
+	 */
+	function translateFields( lang, keys, overwrite, btn ) {
+		var body = new FormData();
+		body.append( 'action', 'postful_translate' );
+		body.append( '_wpnonce', cfg.nonce );
+		body.append( 'post_id', cfg.postId );
+		body.append( 'lang', lang );
 
-			var targets = {};
-			var any = false;
-			( cfg.machine || [] ).forEach( function ( key ) {
-				var src = canvas.querySelector( '.pf-cell[data-pf-field="' + key + '"][data-pf-lang="' + cfg.defLang + '"]' );
-				var dst = canvas.querySelector( '.pf-cell[data-pf-field="' + key + '"][data-pf-lang="' + lang + '"]' );
-				if ( ! src || ! dst ) {
-					return;
-				}
-				// Only fill gaps: never overwrite something a person wrote.
-				var tmp = document.createElement( 'div' );
-				tmp.innerHTML = readCell( dst );
-				if ( ( tmp.textContent || '' ).trim() || tmp.querySelector( 'img, iframe, video, audio' ) ) {
-					return;
-				}
-				var value = readCell( src );
-				if ( value.trim() ) {
-					body.append( 'values[' + key + ']', value );
-					targets[ key ] = dst;
-					any = true;
-				}
-			} );
-			if ( ! any ) {
-				toast( cfg.i18n.nothing );
+		var targets = {};
+		keys.forEach( function ( key ) {
+			var src = canvas.querySelector( '.pf-cell[data-pf-field="' + key + '"][data-pf-lang="' + cfg.defLang + '"]' );
+			var dst = canvas.querySelector( '.pf-cell[data-pf-field="' + key + '"][data-pf-lang="' + lang + '"]' );
+			if ( ! src || ! dst || ( ! overwrite && hasContent( readCell( dst ) ) ) ) {
 				return;
 			}
+			var value = readCell( src );
+			if ( value.trim() ) {
+				body.append( 'values[' + key + ']', value );
+				targets[ key ] = dst;
+			}
+		} );
+		if ( ! Object.keys( targets ).length ) {
+			toast( cfg.i18n.nothing );
+			return;
+		}
 
-			btn.disabled = true;
-			btn.textContent = cfg.i18n.translating;
-			fetch( cfg.ajax, { method: 'POST', credentials: 'same-origin', body: body } )
-				.then( function ( r ) { return r.json(); } )
-				.then( function ( json ) {
-					if ( ! json || ! json.success ) {
-						throw new Error( json && json.data && json.data.message ? json.data.message : cfg.i18n.failed );
+		var label = btn.textContent;
+		btn.disabled = true;
+		btn.textContent = cfg.i18n.translating;
+		fetch( cfg.ajax, { method: 'POST', credentials: 'same-origin', body: body } )
+			.then( function ( r ) { return r.json(); } )
+			.then( function ( json ) {
+				if ( ! json || ! json.success ) {
+					throw new Error( json && json.data && json.data.message ? json.data.message : cfg.i18n.failed );
+				}
+				var n = 0;
+				Object.keys( json.data.values ).forEach( function ( key ) {
+					if ( targets[ key ] ) {
+						writeCell( targets[ key ], json.data.values[ key ] );
+						n++;
 					}
-					var filled = [];
-					Object.keys( json.data.values ).forEach( function ( key ) {
-						if ( targets[ key ] ) {
-							writeCell( targets[ key ], json.data.values[ key ] );
-							filled.push( key );
-						}
-					} );
-					var n = filled.length;
-					var review = canvas.querySelector( '[data-pf-review="' + lang + '"]' );
-					if ( review && n ) {
-						// Only these fields become drafts; anything a person wrote stays live.
-						var flag = review.querySelector( '[data-pf-review-flag]' );
-						flag.value = flag.value ? flag.value + ',' + filled.join( ',' ) : filled.join( ',' );
-						review.hidden = false;
-						review.querySelector( 'input[type=checkbox]' ).checked = false;
-					}
-					document.querySelectorAll( '[data-pf-autogrow]' ).forEach( grow );
-					progress();
-					toast( fmt( cfg.i18n.filled, n ) );
-				} )
-				.catch( function ( err ) {
-					toast( err.message || cfg.i18n.failed, true );
-				} )
-				.then( function () {
-					btn.disabled = false;
-					btn.textContent = label;
 				} );
+				document.querySelectorAll( '[data-pf-autogrow]' ).forEach( grow );
+				progress();
+				toast( fmt( cfg.i18n.filled, n ) );
+			} )
+			.catch( function ( err ) {
+				toast( err.message || cfg.i18n.failed, true );
+			} )
+			.then( function () {
+				btn.disabled = false;
+				btn.textContent = label;
+			} );
+	}
+
+	// Column: fill every empty field in this language.
+	document.querySelectorAll( '[data-pf-translate]' ).forEach( function ( btn ) {
+		btn.addEventListener( 'click', function () {
+			translateFields( btn.getAttribute( 'data-pf-translate' ), cfg.machine || [], false, btn );
+		} );
+	} );
+
+	// One field: translate it, asking before replacing text already there.
+	document.querySelectorAll( '[data-pf-translate-field]' ).forEach( function ( btn ) {
+		btn.addEventListener( 'click', function () {
+			var key = btn.getAttribute( 'data-pf-translate-field' );
+			var lang = btn.getAttribute( 'data-pf-lang' );
+			var dst = canvas.querySelector( '.pf-cell[data-pf-field="' + key + '"][data-pf-lang="' + lang + '"]' );
+			if ( dst && hasContent( readCell( dst ) ) && ! window.confirm( cfg.i18n.replace ) ) {
+				return;
+			}
+			translateFields( lang, [ key ], true, btn );
 		} );
 	} );
 

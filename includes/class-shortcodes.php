@@ -25,8 +25,8 @@ final class Shortcodes {
 	}
 
 	public static function register_assets(): void {
-		wp_register_style( 'postful', POSTFUL_URL . 'assets/front.css', [], POSTFUL_VERSION );
-		wp_register_script( 'postful', POSTFUL_URL . 'assets/front.js', [], POSTFUL_VERSION, [ 'in_footer' => true, 'strategy' => 'defer' ] );
+		wp_register_style( 'postful', POSTFUL_URL . 'assets/front.css', [], Plugin::ver( 'front.css' ) );
+		wp_register_script( 'postful', POSTFUL_URL . 'assets/front.js', [], Plugin::ver( 'front.js' ), [ 'in_footer' => true, 'strategy' => 'defer' ] );
 
 		// Load styles in <head> when we can tell the page uses a shortcode, to avoid a flash.
 		$post = get_post();
@@ -132,30 +132,14 @@ final class Shortcodes {
 		if ( ! is_array( $type ) ) {
 			return $type;
 		}
-		$layout = isset( Types::layouts()[ $atts['layout'] ] ) ? $atts['layout'] : $type['layout'];
-		$args   = [ 'type' => $type['key'] ];
-		$side   = Types::has_sidebar( $layout );
-		$nav    = 'sidebar' === $type['nav_place'] && ! $side ? 'below' : $type['nav_place'];
-		$index  = 'sidebar' === $type['index_place'] && ! $side ? 'below' : $type['index_place'];
-		if ( 'entry_only' === $layout ) {
-			$index = 'hidden';
-		}
-		$compact = 'entry_only' === $layout || 'sidebar' === $nav;
-		$nav_html = self::nav( $args + ( $compact ? [ 'style' => 'compact' ] : [] ) );
+		// One layout for now, like AWMI: the entry in the main column; previous /
+		// today / next and the month list in the sidebar.
+		$args  = [ 'type' => $type['key'] ];
+		$side  = true;
+		$inner = '<div class="pf-layout-main">' . self::current( $args ) . '</div>'
+			. '<aside class="pf-layout-aside">' . self::nav( $args ) . self::index( $args ) . '</aside>';
+		$layout = 'sidebar_right';
 
-		$main  = 'above' === $nav ? $nav_html : '';
-		$main .= self::current( $args + [ 'part' => $side ? 'main' : 'all' ] );
-		$main .= 'below' === $nav ? $nav_html : '';
-		$main .= 'below' === $index ? self::index( $args ) : '';
-
-		if ( ! $side ) {
-			$inner = $main;
-		} else {
-			$aside  = self::current( $args + [ 'part' => 'aside' ] );
-			$aside .= 'sidebar' === $nav ? $nav_html : '';
-			$aside .= 'sidebar' === $index ? self::index( $args ) : '';
-			$inner  = '<div class="pf-layout-main">' . $main . '</div><aside class="pf-layout-aside">' . $aside . '</aside>';
-		}
 		// alignwide: block themes give two-column layouts their wide width, not the narrow text column.
 		return sprintf(
 			'<div class="postful-layout pf-layout--%s%s"%s>%s</div>',

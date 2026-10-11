@@ -121,14 +121,14 @@ final class Renderer {
 			return 'all' === $part || ( 'aside' === $part ) === $aside;
 		};
 
-		// Header: the title on the left, the entry's day on the right.
+		// Header: the title, then the entry's day beneath it.
 		$head = '';
 		if ( 'aside' === $part ) {
 			$title = null;
 			$date  = '';
 		}
 		if ( $title && '' !== $parts[ $title['key'] ][1] ) {
-			$head .= sprintf( '<h2 class="pf-entry-title sp-field-%s">%s</h2>', esc_attr( $title['key'] ), $parts[ $title['key'] ][1] );
+			$head .= sprintf( '<h2 class="pf-entry-title sp-field-%s"%s>%s</h2>', esc_attr( $title['key'] ), self::style_attr( $type, $title['key'] ), $parts[ $title['key'] ][1] );
 		}
 		if ( $date ) {
 			$head .= '<p class="pf-date">' . $date . '</p>';
@@ -139,22 +139,21 @@ final class Renderer {
 			if ( 'toggle' === $field['type'] || '' === $html || ( $title && $fkey === $title['key'] ) || ! $in_part( $field ) ) {
 				continue;
 			}
-			$style = $field['display'] ?? Types::default_display( $field['type'], false );
-			$tag   = match ( $style ) {
-				'highlight' => 'blockquote',
-				'title'     => 'h3',
-				default     => 'div',
-			};
 			$out .= sprintf(
-				'<%1$s class="pf-field pf-style-%2$s pf-field--%3$s sp-field-%4$s">%5$s</%1$s>',
-				$tag,
-				esc_attr( $style ),
+				'<div class="pf-field pf-field--%1$s sp-field-%2$s"%3$s>%4$s</div>',
 				esc_attr( $field['type'] ),
 				esc_attr( $fkey ),
+				self::style_attr( $type, $fkey ),
 				$html
 			);
 		}
 		return $out;
+	}
+
+	/** Style step settings for one field, as a validated inline style attribute. */
+	private static function style_attr( array $type, string $field_key ): string {
+		$css = Types::field_css( $type, $field_key );
+		return $css ? ' style="' . esc_attr( $css ) . '"' : '';
 	}
 
 	/**
@@ -188,8 +187,8 @@ final class Renderer {
 			if ( empty( $field['required'] ) ) {
 				continue;
 			}
-			$codes = ! empty( $field['translatable'] ) ? Types::lang_codes( $type ) : [ $type['default_lang'] ];
-			foreach ( $codes as $code ) {
+			// Translations are optional (they fall back to the default language).
+			foreach ( [ $type['default_lang'] ] as $code ) {
 				if ( Fields::is_empty( $field, Fields::value( $post_id, $field, $code ) ) ) {
 					$missing[] = $field['label'] . ( $multi && ! empty( $field['translatable'] ) ? ' (' . Languages::name( $locales[ $code ] ) . ')' : '' );
 				}
