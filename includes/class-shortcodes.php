@@ -77,6 +77,22 @@ final class Shortcodes {
 		return $vars ? ' style="' . esc_attr( $vars ) . '"' : '';
 	}
 
+	/** Does the current page use [postful] or [sp_index] (with its links) for this type? */
+	private static function page_has_index_nav( string $key ): bool {
+		$post = get_post();
+		if ( ! $post || ! preg_match_all( '/\[(postful|sp_index)\b([^\]]*)\]/', $post->post_content, $found, PREG_SET_ORDER ) ) {
+			return false;
+		}
+		foreach ( $found as [ , $tag, $attr_text ] ) {
+			$attrs = shortcode_parse_atts( $attr_text );
+			$attrs = is_array( $attrs ) ? $attrs : [];
+			if ( sanitize_key( $attrs['type'] ?? '' ) === $key && ( 'postful' === $tag || 'no' !== strtolower( (string) ( $attrs['nav'] ?? 'yes' ) ) ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/** Remember the type; output happens in the footer (see print_data). */
 	private static function data( array $type ): string {
 		self::$used[ $type['key'] ] = true;
@@ -183,7 +199,7 @@ final class Shortcodes {
 			return $type;
 		}
 		$with_nav = 'no' !== strtolower( (string) ( $atts['nav'] ?? 'yes' ) );
-		return ( $with_nav ? self::nav( [ 'type' => $type['key'] ] ) : '' ) . self::month_list( $type );
+		return ( $with_nav ? self::nav( [ 'type' => $type['key'], 'internal' => true ] ) : '' ) . self::month_list( $type );
 	}
 
 	private static function month_list( array $type ): string {
@@ -240,6 +256,11 @@ final class Shortcodes {
 		$type    = self::type( $atts, 'sp_nav' );
 		if ( ! is_array( $type ) ) {
 			return $type;
+		}
+		// A standalone [sp_nav] steps aside when the page's month list already
+		// shows the links, so they never appear twice.
+		if ( empty( $atts['internal'] ) && self::page_has_index_nav( $type['key'] ) ) {
+			return '';
 		}
 		$label = fn( $k ) => Renderer::per_lang( $type, fn( $c ) => esc_html( Languages::strings( $type, $c )[ $k ] ) );
 
