@@ -51,7 +51,7 @@ Create one page, for example `/reading/daily-devotional/`, and add a single shor
 
 **How navigation works.** Clicking swaps the entry in place, and the address bar never changes, so a daily email can always link to this one page. Refreshing returns to today.
 
-**Unusual designs.** You can also place the parts separately: `[sp_current]`, `[sp_nav]` and `[sp_index]`, each with `type="…"`.
+**Placing the parts yourself.** If your theme already has a sidebar, put `[sp_current type="devotional"]` in the content and `[sp_index type="devotional"]` in the sidebar. The month list brings Previous / Today / Next along above it (add `nav="no"` to leave them out, and place `[sp_nav]` wherever you like).
 
 **URLs.** Entries have no URLs of their own and are left out of search, feeds and sitemaps. To turn per-entry URLs on, open the type, go to Structure → Advanced.
 

@@ -51,16 +51,26 @@
 .pf-current { transition: opacity .2s ease; }
 .pf-current.is-loading { opacity: .45; }
 
-.pf-entry .pf-entry-head { margin: 0 0 1.2em; }
+/* Title on the left, the entry's day on the right (wraps under on narrow screens). */
+.pf-entry .pf-entry-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: .2em 1.5em;
+	margin: 0 0 1.2em;
+}
 .pf-entry .pf-entry-title {
-	margin: 0 0 .35em;
+	flex: 1 1 14em;
+	margin: 0;
 	font-size: clamp(1.6em, 3.4vw, 2.1em);
 	font-weight: 600;
 	line-height: 1.2;
 }
-/* The day, beneath the title (AWMI style): small, spaced capitals, muted. */
+/* The day: small, spaced capitals, muted. */
 .pf-entry .pf-date {
 	margin: 0 0 var(--pf-date-space, 0);
+	white-space: nowrap;
 	color: var(--pf-date-color, inherit);
 	font-size: var(--pf-date-size, .8em);
 	font-weight: 600;
@@ -176,3 +186,6 @@
 @media (prefers-reduced-motion: reduce) {
 	.pf-current, .postful.pf-nav .pf-nav-btn { transition: none; }
 }
+
+/* [sp_index] places the links right above the month list. */
+.postful.pf-nav + .postful.pf-index { margin-top: 1.4em; }

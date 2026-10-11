@@ -137,7 +137,7 @@ final class Shortcodes {
 		$args  = [ 'type' => $type['key'] ];
 		$side  = true;
 		$inner = '<div class="pf-layout-main">' . self::current( $args ) . '</div>'
-			. '<aside class="pf-layout-aside">' . self::nav( $args ) . self::index( $args ) . '</aside>';
+			. '<aside class="pf-layout-aside">' . self::index( $args ) . '</aside>';
 		$layout = 'sidebar_right';
 
 		// alignwide: block themes give two-column layouts their wide width, not the narrow text column.
@@ -173,11 +173,20 @@ final class Shortcodes {
 		return $open . $inner . '</div>' . self::data( $type );
 	}
 
+	/**
+	 * [sp_index] — the month list, with Previous / Today / Next above it.
+	 * nav="no" leaves the links out (e.g. when placing [sp_nav] elsewhere).
+	 */
 	public static function index( $atts ): string {
 		$type = self::type( $atts, 'sp_index' );
 		if ( ! is_array( $type ) ) {
 			return $type;
 		}
+		$with_nav = 'no' !== strtolower( (string) ( $atts['nav'] ?? 'yes' ) );
+		return ( $with_nav ? self::nav( [ 'type' => $type['key'] ] ) : '' ) . self::month_list( $type );
+	}
+
+	private static function month_list( array $type ): string {
 		$preset  = Presets::get( $type['preset'] );
 		$today   = (int) $preset->current_sort();
 		$entries = Index::get( $type['key'] );
