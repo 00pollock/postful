@@ -520,11 +520,11 @@
 		} ).join( '' );
 		var headPart = '<div class="postful pf-current"><article class="pf-entry"><div class="pf-lang">' + head + '</div></article></div>';
 		var bodyPart = '<div class="postful pf-current"><article class="pf-entry"><div class="pf-lang">' + body + '</div></article></div>';
-		var nav = '<nav class="postful pf-nav"><button class="pf-nav-btn">Previous</button><button class="pf-nav-btn">Today</button><button class="pf-nav-btn">Next</button></nav>';
+		var nav = '<nav class="postful pf-nav"><a class="pf-nav-btn" href="#">Previous</a><a class="pf-nav-btn" href="#">Today</a><a class="pf-nav-btn" href="#">Next</a></nav>';
 		var index = '<div class="postful pf-index"><h2 class="pf-index-title">Browse by month</h2>' + [ 'September', 'October', 'November' ].map( function ( m ) {
 			var open = m === 'October';
 			var days = open ? '<ol class="pf-days">' + [ 9, 10, 11 ].map( function ( d ) {
-				return '<li><button class="pf-day' + ( d === 10 ? ' is-current' : '' ) + '"><span class="pf-day-num">' + d + '</span><span class="pf-day-text">' + esc( title ? title.label : 'Entry' ) + ' ' + d + '</span></button></li>';
+				return '<li><a href="#" class="pf-day' + ( d === 10 ? ' is-current' : '' ) + '"><span class="pf-day-num">' + d + '</span><span class="pf-day-text">' + esc( title ? title.label : 'Entry' ) + ' ' + d + '</span></a></li>';
 			} ).join( '' ) + '</ol>' : '';
 			return '<details class="pf-month"' + ( open ? ' open' : '' ) + '><summary><span class="pf-month-name">' + m + '</span></summary>' + days + '</details>';
 		} ).join( '' ) + '</div>';

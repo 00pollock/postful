@@ -11,12 +11,12 @@
 .postful-layout {
 	--pf-rule: var(--pf-index-line, rgba(127, 127, 127, .22));
 	--pf-radius: 10px;
-	/* Focus colour: Style panel → theme's primary colour → a calm blue. */
-	--pf-focus-c: var(--pf-accent, var(--wp--preset--color--primary, #2457c5));
 	color: var(--pf-text, inherit);
 	font-size: var(--pf-text-size, inherit);
 }
-.postful a { color: var(--pf-focus-c); }
+/* Links use the theme's link colour unless a colour is chosen in the Style step. */
+[data-pf-colors~="pf-has-accent"] .postful a,
+.postful[data-pf-colors~="pf-has-accent"] a { color: var(--pf-accent); }
 
 /* ---- Layout ------------------------------------------------------------
  * [postful] fills whatever container it is placed in (no wide/full breakout).
@@ -102,7 +102,7 @@
 
 .postful .pf-message { margin: 0; font-style: italic; opacity: .7; }
 
-/* ---- Previous / Today / Next: plain text links ------------------------- */
+/* ---- Previous / Today / Next: real links in the theme's link colour ---- */
 
 .postful.pf-nav {
 	display: flex;
@@ -112,25 +112,16 @@
 	gap: .4em 1.8em;
 }
 .postful.pf-nav .pf-nav-btn {
-	margin: 0;
-	padding: .2em 0;
-	border: 0;
-	border-radius: 0;
-	background: none;
-	box-shadow: none;
-	color: var(--pf-nav-color, var(--pf-focus-c));
-	font: inherit;
 	font-size: var(--pf-nav-size, 1em);
 	line-height: 1.4;
-	text-decoration: underline;
-	text-decoration-color: transparent;
-	text-underline-offset: 3px;
+	text-decoration: none;
 	cursor: pointer;
-	transition: text-decoration-color .15s;
 }
 .postful.pf-nav .pf-nav-btn:hover,
-.postful.pf-nav .pf-nav-btn:focus-visible { background: none; color: var(--pf-nav-color, var(--pf-focus-c)); text-decoration-color: currentColor; }
+.postful.pf-nav .pf-nav-btn:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
 .postful.pf-nav .pf-nav-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+[data-pf-colors~="pf-has-nav-color"] .pf-nav .pf-nav-btn,
+.pf-nav[data-pf-colors~="pf-has-nav-color"] .pf-nav-btn { color: var(--pf-nav-color); }
 
 /* ---- Month list: flush rows, colour for focus (no boxes, no padding) --- */
 
@@ -149,9 +140,9 @@
 	transition: color .15s;
 }
 .pf-index summary::-webkit-details-marker { display: none; }
-.pf-index summary:hover,
-.pf-index details[open] > summary { color: var(--pf-focus-c); }
 .pf-index details[open] > summary { font-weight: 600; }
+[data-pf-colors~="pf-has-accent"] .pf-index details[open] > summary,
+.pf-index[data-pf-colors~="pf-has-accent"] details[open] > summary { color: var(--pf-accent); }
 .pf-index summary:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .pf-index .pf-month-name { flex: 1; text-transform: capitalize; }
 .pf-index .pf-month-count { font-size: .8em; font-weight: 400; opacity: .5; font-variant-numeric: tabular-nums; }
@@ -169,18 +160,21 @@
 	border: 0;
 	background: none;
 	box-shadow: none;
-	color: inherit;
 	font: inherit;
 	font-size: var(--pf-day-size, .95em);
+	text-decoration: none;
 	line-height: 1.45;
 	text-align: left;
 	opacity: .78;
 	cursor: pointer;
 	transition: color .15s, opacity .15s;
 }
-.pf-index .pf-day:hover { background: none; color: var(--pf-focus-c); opacity: 1; }
+.pf-index .pf-day:not(.is-current) { color: inherit; } /* other days in the text colour */
+.pf-index .pf-day:hover { background: none; opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
 .pf-index .pf-day:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
-.pf-index .pf-day.is-current { color: var(--pf-focus-c); font-weight: 600; opacity: 1; }
+.pf-index .pf-day.is-current { font-weight: 600; opacity: 1; } /* the theme's link colour */
+[data-pf-colors~="pf-has-accent"] .pf-index .pf-day.is-current,
+.pf-index[data-pf-colors~="pf-has-accent"] .pf-day.is-current { color: var(--pf-accent); }
 .pf-index .pf-day-num { min-width: 2ch; font-variant-numeric: tabular-nums; text-align: right; opacity: .6; }
 .pf-index .pf-day.is-current .pf-day-num { opacity: 1; }
 .pf-index .pf-day-label {

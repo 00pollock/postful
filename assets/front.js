@@ -197,6 +197,7 @@
 			state.navigated = true;
 		}
 		highlight( state );
+		syncNavLinks( state );
 
 		var targets = Array.prototype.slice.call( document.querySelectorAll( '.pf-current[data-pf-type="' + state.d.type + '"]' ) );
 		if ( ! targets.length ) {
@@ -261,6 +262,34 @@
 		return m >= 1 && m <= 12 && d >= 1 && d <= 31 ? m * 100 + d : null;
 	}
 
+	function dayHref( sort ) {
+		var url = new URL( window.location.href );
+		url.searchParams.delete( 'mn' );
+		url.searchParams.delete( 'dn' );
+		if ( sort ) {
+			url.searchParams.set( 'mn', String( Math.floor( sort / 100 ) ) );
+			url.searchParams.set( 'dn', String( sort % 100 ) );
+		}
+		return url.href;
+	}
+
+	/** Keep the Previous / Next links pointing at the days around the one shown. */
+	function syncNavLinks( state ) {
+		if ( ! window.URL ) {
+			return;
+		}
+		document.querySelectorAll( '.pf-nav[data-pf-type="' + state.d.type + '"]' ).forEach( function ( nav ) {
+			var prev = nav.querySelector( '[data-pf-go="prev"]' );
+			var next = nav.querySelector( '[data-pf-go="next"]' );
+			if ( prev ) {
+				prev.href = dayHref( neighbour( state, -1 ) );
+			}
+			if ( next ) {
+				next.href = dayHref( neighbour( state, 1 ) );
+			}
+		} );
+	}
+
 	function setUrl( sort, isToday ) {
 		if ( ! window.history || ! window.URL ) {
 			return;
@@ -287,9 +316,16 @@
 		if ( ! state ) {
 			return;
 		}
+		// These are real links: let new-tab / copy / modified clicks behave normally.
+		if ( e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey ) {
+			return;
+		}
 		var target = null;
 		var nav = e.target.closest( '[data-pf-go]' );
 		var day = e.target.closest( '.pf-day[data-pf-sort]' );
+		if ( nav || day ) {
+			e.preventDefault();
+		}
 		if ( nav ) {
 			var dir = nav.getAttribute( 'data-pf-go' );
 			target = dir === 'today' ? state.today : neighbour( state, dir === 'next' ? 1 : -1 );

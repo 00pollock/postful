@@ -71,10 +71,46 @@ final class Shortcodes {
 		);
 	}
 
-	/** The type's Style panel settings as CSS custom properties. */
+	/**
+	 * The type's Style settings as CSS custom properties, plus classes saying
+	 * which colours were chosen (unset colours follow the theme's own link colour).
+	 */
 	private static function style_attr( array $type ): string {
-		$vars = Types::style_vars( $type );
-		return $vars ? ' style="' . esc_attr( $vars ) . '"' : '';
+		$vars    = Types::style_vars( $type );
+		$classes = [];
+		foreach ( [ 'accent' => 'pf-has-accent', 'nav_color' => 'pf-has-nav-color' ] as $key => $class ) {
+			if ( ! empty( $type['style'][ $key ] ) ) {
+				$classes[] = $class;
+			}
+		}
+		return ( $vars ? ' style="' . esc_attr( $vars ) . '"' : '' ) . ( $classes ? ' data-pf-colors="' . esc_attr( implode( ' ', $classes ) ) . '"' : '' );
+	}
+
+	/** This page's address for a day (?mn=&dn=), or the plain address (today) for 0. */
+	private static function day_url( int $sort ): string {
+		$base = remove_query_arg( [ 'mn', 'dn' ] );
+		return $sort ? add_query_arg( [ 'mn' => intdiv( $sort, 100 ), 'dn' => $sort % 100 ], $base ) : $base;
+	}
+
+	/** The published day before / after $sort, wrapping around the year. */
+	private static function neighbour( array $sorts, int $sort, int $dir ): int {
+		if ( ! $sorts ) {
+			return 0;
+		}
+		if ( $dir > 0 ) {
+			foreach ( $sorts as $s ) {
+				if ( $s > $sort ) {
+					return $s;
+				}
+			}
+			return $sorts[0];
+		}
+		foreach ( array_reverse( $sorts ) as $s ) {
+			if ( $s < $sort ) {
+				return $s;
+			}
+		}
+		return end( $sorts );
 	}
 
 	/** Does the current page use [postful] or [sp_index] (with its links) for this type? */
@@ -231,13 +267,14 @@ final class Shortcodes {
 					: '';
 				$label   = Renderer::per_lang( $type, fn( $c ) => esc_html( $preset->key_label( $preset->key_from_sort( $sort ), $c, $locales[ $c ] ) ) );
 				$out    .= sprintf(
-					'<li><button type="button" class="pf-day%1$s" data-pf-sort="%2$d"%3$s><span class="pf-day-num">%4$d</span><span class="pf-day-text"><span class="pf-day-label">%5$s</span><span class="pf-day-title">%6$s</span></span></button></li>',
+					'<li><a class="pf-day%1$s" href="%7$s" data-pf-sort="%2$d"%3$s><span class="pf-day-num">%4$d</span><span class="pf-day-text"><span class="pf-day-label">%5$s</span><span class="pf-day-title">%6$s</span></span></a></li>',
 					$sort === $today ? ' is-current' : '',
 					$sort,
 					$sort === $today ? ' aria-current="true"' : '',
 					$sort % 100,
 					$label,
-					$heading
+					$heading,
+					esc_url( self::day_url( $sort ) )
 				);
 			}
 			$out .= '</ol></details>';
@@ -263,9 +300,16 @@ final class Shortcodes {
 		if ( $compact ) {
 			$out = str_replace( 'class="postful pf-nav ', 'class="postful pf-nav pf-nav--compact ', $out );
 		}
-		$out .= '<button type="button" class="pf-nav-btn pf-nav-prev" data-pf-go="prev">' . $label( 'prev' ) . '</button>';
-		$out .= '<button type="button" class="pf-nav-btn pf-nav-today" data-pf-go="today">' . $label( 'today' ) . '</button>';
-		$out .= '<button type="button" class="pf-nav-btn pf-nav-next" data-pf-go="next">' . $label( 'next' ) . '</button>';
+		// Real links (so the theme's link colour applies and they can be copied or
+		// opened in a new tab); front.js swaps the day in place on a normal click.
+		$preset  = Presets::get( $type['preset'] );
+		$shown   = (int) ( $preset->requested_sort() ?? $preset->current_sort() );
+		$sorts   = array_column( Index::get( $type['key'] ), 0 );
+		$prev    = self::neighbour( $sorts, $shown, -1 );
+		$next    = self::neighbour( $sorts, $shown, 1 );
+		$out .= '<a class="pf-nav-btn pf-nav-prev" data-pf-go="prev" href="' . esc_url( $prev ? self::day_url( $prev ) : self::day_url( 0 ) ) . '">' . $label( 'prev' ) . '</a>';
+		$out .= '<a class="pf-nav-btn pf-nav-today" data-pf-go="today" href="' . esc_url( self::day_url( 0 ) ) . '">' . $label( 'today' ) . '</a>';
+		$out .= '<a class="pf-nav-btn pf-nav-next" data-pf-go="next" href="' . esc_url( $next ? self::day_url( $next ) : self::day_url( 0 ) ) . '">' . $label( 'next' ) . '</a>';
 		return $out . '</nav>' . self::data( $type );
 	}
 }
