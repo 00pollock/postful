@@ -4,7 +4,7 @@ Tags: devotional, multilingual, custom post type, daily, bilingual
 Requires at least: 6.3
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 0.4.0
+Stable tag: 0.4.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -44,6 +44,9 @@ If a page cache serves an old copy, Postful fixes the entry in the visitor's bro
 No. Entries are only deleted if you switch on Postful → Settings → "Delete data on uninstall" and then delete the plugin.
 
 == Changelog ==
+
+= 0.4.1 =
+* No outer spacing above or below the devotional: it's controlled only by the container it's placed in.
 
 = 0.4.0 =
 * Removed machine translation (DeepL): no Translate buttons, no API key setting, nothing sent to outside services. French comes from your own text or your French workbook.

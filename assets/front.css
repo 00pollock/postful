@@ -35,8 +35,13 @@
 	box-sizing: border-box;
 	width: 100%;
 	max-width: var(--pf-width, 100%);
-	margin: 0 0 2em;
+	/* No outer spacing: space above and below comes from the container. */
+	margin: 0;
+	padding: 0;
 }
+.postful-wrap,
+.postful-layout .postful,
+.postful-layout .pf-entry { margin-top: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; }
 .postful-layout .pf-area-head { grid-area: head; align-self: center; min-width: 0; }
 .postful-layout .pf-area-nav { grid-area: nav; align-self: center; }
 .postful-layout .pf-area-body { grid-area: body; min-width: 0; }
