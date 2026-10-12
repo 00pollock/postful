@@ -4,7 +4,7 @@ Tags: devotional, multilingual, custom post type, daily, bilingual
 Requires at least: 6.3
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 0.4.2
+Stable tag: 0.4.3
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -44,6 +44,9 @@ If a page cache serves an old copy, Postful fixes the entry in the visitor's bro
 No. Entries are only deleted if you switch on Postful → Settings → "Delete data on uninstall" and then delete the plugin.
 
 == Changelog ==
+
+= 0.4.3 =
+* Field styling: "Right" added to the alignment options.
 
 = 0.4.2 =
 * Previous / Today / Next and the days in the month list are real links in your theme's link colour (no built-in blue). They can be opened in a new tab or copied; a normal click still swaps the day in place.

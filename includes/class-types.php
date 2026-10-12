@@ -81,7 +81,7 @@ final class Types {
 			'weight' => [ __( 'Weight', 'postful' ), [ '400' => __( 'Regular', 'postful' ), '500' => __( 'Medium', 'postful' ), '600' => __( 'Semibold', 'postful' ), '700' => __( 'Bold', 'postful' ) ] ],
 			'italic' => [ __( 'Style', 'postful' ), [ 'normal' => __( 'Upright', 'postful' ), 'italic' => __( 'Italic', 'postful' ) ] ],
 			'case'   => [ __( 'Letters', 'postful' ), [ 'none' => __( 'As typed', 'postful' ), 'uppercase' => __( 'CAPITALS', 'postful' ) ] ],
-			'align'  => [ __( 'Alignment', 'postful' ), [ 'left' => __( 'Left', 'postful' ), 'center' => __( 'Centre', 'postful' ) ] ],
+			'align'  => [ __( 'Alignment', 'postful' ), [ 'left' => __( 'Left', 'postful' ), 'center' => __( 'Centre', 'postful' ), 'right' => __( 'Right', 'postful' ) ] ],
 			'color'  => [ __( 'Colour', 'postful' ), 'color' ],
 			'space'  => [ __( 'Space below', 'postful' ), 'size' ],
 			'frame'  => [ __( 'Line', 'postful' ), [ 'none' => __( 'None', 'postful' ), 'left' => __( 'Line on the left', 'postful' ), 'around' => __( 'Lines above and below', 'postful' ) ] ],
