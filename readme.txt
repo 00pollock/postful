@@ -4,7 +4,7 @@ Tags: devotional, multilingual, custom post type, daily, bilingual
 Requires at least: 6.3
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 0.2.2
+Stable tag: 0.3.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,7 +18,7 @@ Postful lets you create a content type (for example "Devotionals") with its own 
 * Every language lives in the same entry and is edited side by side, field by field.
 * One page, one address: visitors browse by month or previous/next without the URL changing, so a daily email can always link to the same page.
 * Follows the language your site is already showing (GTranslate, browser language). It never sets a language itself.
-* CSV import and export, re-runnable: add French to English-only entries in a second pass.
+* Excel import and export in your workbook's shape (one file per language, a sheet per month), re-runnable.
 * A clean reading layout (entry plus sidebar with the month list) and per-field styling with live preview.
 * Optional DeepL translation drafts that stay hidden from visitors until reviewed.
 
@@ -45,6 +45,13 @@ If a page cache serves an old copy, Postful fixes the entry in the visitor's bro
 No. Entries are only deleted if you switch on Postful → Settings → "Delete data on uninstall" and then delete the plugin.
 
 == Changelog ==
+
+= 0.3.0 =
+* Devotionals only: the setup starts with Title, Scripture of the day, Reference and Text; the Structure step and other presets are gone.
+* Import your Excel workbooks as they are: one per language, a sheet per month, dates like "1er janvier" or "January 1". Columns are matched with a preview; paragraphs, bold and italic are kept.
+* Export in the same shape: one workbook per language, a sheet per month.
+* [postful] now fills the container it is placed in, and the title, date and Previous / Today / Next line up on one row.
+* Month list: one month open at a time, no entry counts.
 
 = 0.2.2 =
 * A separate [sp_nav] hides itself when the page's month list already shows Previous / Today / Next, so the links never appear twice.

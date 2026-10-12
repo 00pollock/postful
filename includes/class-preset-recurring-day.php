@@ -48,11 +48,14 @@ final class Preset_Recurring_Day extends Preset {
 		return '<svg viewBox="0 0 92 42" aria-hidden="true"><rect x="4" y="3" width="30" height="7" rx="2" fill="currentColor" opacity=".35"/>' . $cells . '</svg>';
 	}
 
-	/** A neutral start; the user names and adds fields in the wizard. */
+	/** Matches the devotional spreadsheet: Title, Scripture of the day, Reference, Text. */
 	public function default_fields(): array {
+		$f = fn( $key, $label, $type, $required = false ) => [ 'key' => $key, 'label' => $label, 'type' => $type, 'required' => $required, 'help' => '', 'translatable' => true, 'choices' => [] ];
 		return [
-			[ 'key' => 'title', 'label' => __( 'Title', 'postful' ), 'type' => 'text', 'required' => true, 'help' => '', 'translatable' => true, 'choices' => [] ],
-			[ 'key' => 'content', 'label' => __( 'Content', 'postful' ), 'type' => 'richtext', 'required' => true, 'help' => '', 'translatable' => true, 'choices' => [] ],
+			$f( 'title', __( 'Title', 'postful' ), 'text', true ),
+			$f( 'scripture_of_the_day', __( 'Scripture of the day', 'postful' ), 'textarea' ),
+			$f( 'reference', __( 'Reference', 'postful' ), 'text' ),
+			$f( 'text', __( 'Text', 'postful' ), 'richtext', true ),
 		];
 	}
 

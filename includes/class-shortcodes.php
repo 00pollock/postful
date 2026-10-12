@@ -148,21 +148,18 @@ final class Shortcodes {
 		if ( ! is_array( $type ) ) {
 			return $type;
 		}
-		// One layout for now, like AWMI: the entry in the main column; previous /
-		// today / next and the month list in the sidebar.
-		$args  = [ 'type' => $type['key'] ];
-		$side  = true;
-		$inner = '<div class="pf-layout-main">' . self::current( $args ) . '</div>'
-			. '<aside class="pf-layout-aside">' . self::index( $args ) . '</aside>';
-		$layout = 'sidebar_right';
-
-		// alignwide: block themes give two-column layouts their wide width, not the narrow text column.
+		// The devotional layout, like AWMI. A two-row grid so the title row and
+		// Previous / Today / Next line up:   [ title · date ][ links ]
+		//                                    [ devotional   ][ month list ]
+		// On phones it stacks: title, devotional, links, month list.
+		$args = [ 'type' => $type['key'] ];
 		return sprintf(
-			'<div class="postful-layout pf-layout--%s%s"%s>%s</div>',
-			esc_attr( str_replace( '_', '-', $layout ) ),
-			$side ? ' alignwide' : '',
+			'<div class="postful-wrap"><div class="postful-layout"%s><div class="pf-area-head">%s</div><div class="pf-area-nav">%s</div><div class="pf-area-body">%s</div><div class="pf-area-index">%s</div></div></div>',
 			self::style_attr( $type ),
-			$inner
+			self::current( $args + [ 'part' => 'head' ] ),
+			self::nav( $args + [ 'internal' => true ] ),
+			self::current( $args + [ 'part' => 'body' ] ),
+			self::index( $args + [ 'nav' => 'no' ] )
 		);
 	}
 
@@ -171,20 +168,16 @@ final class Shortcodes {
 		if ( ! is_array( $type ) ) {
 			return $type;
 		}
-		$part   = in_array( $atts['part'] ?? '', [ 'main', 'aside' ], true ) ? $atts['part'] : 'all';
+		$part   = in_array( $atts['part'] ?? '', [ 'head', 'body' ], true ) ? $atts['part'] : 'all';
 		$preset = Presets::get( $type['preset'] );
 		$sort   = (int) $preset->current_sort();
 		$id     = Index::find( $type['key'], $sort );
-		if ( 'aside' === $part ) {
-			$inner = $id ? Renderer::entry( $type, $id, 'aside' ) : '';
-		} else {
-			$inner = $id ? Renderer::entry( $type, $id, $part ) : Renderer::empty_state( $type, $preset->key_from_sort( $sort ) );
-		}
-		// data-pf-part tells front.js which half of a split entry this container shows.
-		$extra = ' aria-live="polite"' . ( 'all' !== $part ? ' data-pf-part="' . esc_attr( $part ) . '"' : '' );
+		$inner  = $id ? Renderer::entry( $type, $id, $part ) : Renderer::empty_state( $type, $preset->key_from_sort( $sort ), 'empty', $part );
+		// data-pf-part tells front.js which part of a split entry this container shows.
+		$extra = ( 'head' === $part ? '' : ' aria-live="polite"' ) . ( 'all' !== $part ? ' data-pf-part="' . esc_attr( $part ) . '"' : '' );
 		$open  = self::open( $type, 'current', 'div', $extra );
-		if ( 'aside' === $part ) {
-			$open = str_replace( 'class="postful pf-current ', 'class="postful pf-current pf-current--aside ', $open );
+		if ( 'all' !== $part ) {
+			$open = str_replace( 'class="postful pf-current ', 'class="postful pf-current pf-current--' . $part . ' ', $open );
 		}
 		return $open . $inner . '</div>' . self::data( $type );
 	}
@@ -226,9 +219,9 @@ final class Shortcodes {
 
 		foreach ( $by_month as $month => $items ) {
 			$open = intdiv( $today, 100 ) === $month;
-			$out .= sprintf( '<details class="pf-month" data-pf-month="%d"%s>', $month, $open ? ' open' : '' );
-			$out .= '<summary><span class="pf-month-name">' . Renderer::per_lang( $type, fn( $c ) => esc_html( Languages::month( $month, $c, $locales[ $c ] ) ) ) . '</span>';
-			$out .= '<span class="pf-month-count">' . count( $items ) . '</span></summary><ol class="pf-days">';
+			$out .= sprintf( '<details class="pf-month" name="pf-months-%s" data-pf-month="%d"%s>', esc_attr( $type['key'] ), $month, $open ? ' open' : '' );
+			$out .= '<summary><span class="pf-month-name">' . Renderer::per_lang( $type, fn( $c ) => esc_html( mb_convert_case( Languages::month( $month, $c, $locales[ $c ] ), MB_CASE_TITLE, 'UTF-8' ) ) ) . '</span>';
+			$out .= '</summary><ol class="pf-days">';
 
 			foreach ( $items as [ $sort, $id ] ) {
 				$heading = $title

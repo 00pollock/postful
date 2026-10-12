@@ -10,7 +10,7 @@ defined( 'ABSPATH' ) || exit;
 final class Admin {
 
 	public static function hooks(): void {
-		// Order: Content types (9) → each type's entries (core, 10) → Add / Settings (11).
+		// Order: Setup (9) → Devotionals entries (core, 10) → Settings (11).
 		add_action( 'admin_menu', [ self::class, 'menus' ], 9 );
 		add_action( 'admin_menu', [ self::class, 'menus_after' ], 11 );
 		add_action( 'admin_enqueue_scripts', [ self::class, 'assets' ] );
@@ -29,11 +29,12 @@ final class Admin {
 	public static function menus(): void {
 		// edit_posts so editors reach their entries; type setup pages still need manage_options.
 		add_menu_page( 'Postful', 'Postful', Types::all() ? 'edit_posts' : 'manage_options', 'postful', [ self::class, 'types_page' ], Plugin::menu_icon(), 26 );
-		add_submenu_page( 'postful', __( 'Content types', 'postful' ), __( 'Content types', 'postful' ), 'manage_options', 'postful', [ self::class, 'types_page' ] );
+		add_submenu_page( 'postful', __( 'Setup', 'postful' ), __( 'Setup', 'postful' ), 'manage_options', 'postful', [ self::class, 'types_page' ] );
 	}
 
 	public static function menus_after(): void {
-		add_submenu_page( 'postful', __( 'Add content type', 'postful' ), __( 'Add content type', 'postful' ), 'manage_options', 'postful-type', [ self::class, 'wizard_page' ] );
+		// The setup wizard has no menu item of its own; it opens from Setup.
+		add_submenu_page( 'options.php', __( 'Devotional setup', 'postful' ), __( 'Devotional setup', 'postful' ), 'manage_options', 'postful-type', [ self::class, 'wizard_page' ] );
 		add_submenu_page( 'postful', __( 'Settings', 'postful' ), __( 'Settings', 'postful' ), 'manage_options', 'postful-settings', [ Settings::class, 'render_page' ] );
 	}
 
@@ -48,7 +49,7 @@ final class Admin {
 				'copied'        => __( 'Copied', 'postful' ),
 				'copy'          => __( 'Copy', 'postful' ),
 				'removeLocked'  => __( "Remove this field?\n\nEntries already have content saved under this field. It stays in the database but will no longer be shown or editable. To rename a key, remove the field and add a new one.", 'postful' ),
-				'deleteType'    => __( "Delete this content type?\n\nIts entries are NOT deleted. They stay in the database and come back if you recreate a type with the same internal key.", 'postful' ),
+				'deleteType'    => __( "Delete this devotional setup?\n\nThe devotionals themselves are NOT deleted. They stay in the database and come back if you recreate a type with the same internal key.", 'postful' ),
 				'needLanguage'  => __( 'Choose at least one language.', 'postful' ),
 				'needName'      => __( 'Give it a name.', 'postful' ),
 				'needField'     => __( 'Add at least one field.', 'postful' ),
@@ -86,7 +87,7 @@ final class Admin {
 	}
 
 	// ------------------------------------------------------------------
-	// Content types list
+	// Setup page (the devotional type's card)
 	// ------------------------------------------------------------------
 
 	public static function types_page(): void {
@@ -100,21 +101,18 @@ final class Admin {
 		<div class="wrap pf-wrap">
 			<header class="pf-page-head">
 				<div>
-					<h1 class="pf-title"><?php esc_html_e( 'Content types', 'postful' ); ?></h1>
-					<p class="pf-sub"><?php esc_html_e( 'Structured content with fields and languages, edited side by side.', 'postful' ); ?></p>
+					<h1 class="pf-title"><?php esc_html_e( 'Setup', 'postful' ); ?></h1>
+					<p class="pf-sub"><?php esc_html_e( 'Your daily devotionals: fields, languages and how they look.', 'postful' ); ?></p>
 				</div>
-				<?php if ( $types ) : ?>
-					<a class="pf-btn pf-btn--primary" href="<?php echo esc_url( $new_url ); ?>"><?php esc_html_e( 'Add content type', 'postful' ); ?></a>
-				<?php endif; ?>
 			</header>
 
 			<?php self::render_flash(); ?>
 
 			<?php if ( ! $types ) : ?>
 				<div class="pf-empty">
-					<h2><?php esc_html_e( 'Create your first content type', 'postful' ); ?></h2>
-					<p><?php esc_html_e( 'A daily devotional, a lesson series, a glossary — pick a structure, choose languages and fields, and start writing. It takes about a minute.', 'postful' ); ?></p>
-					<a class="pf-btn pf-btn--primary pf-btn--lg" href="<?php echo esc_url( $new_url ); ?>"><?php esc_html_e( 'Add content type', 'postful' ); ?></a>
+					<h2><?php esc_html_e( 'Set up your devotionals', 'postful' ); ?></h2>
+					<p><?php esc_html_e( 'One devotional for every day of the year, in English and French side by side. Choose the fields to match your spreadsheet and how they look. It takes about a minute.', 'postful' ); ?></p>
+					<a class="pf-btn pf-btn--primary pf-btn--lg" href="<?php echo esc_url( $new_url ); ?>"><?php esc_html_e( 'Set up devotionals', 'postful' ); ?></a>
 				</div>
 			<?php else : ?>
 				<div class="pf-cards">
@@ -170,7 +168,7 @@ final class Admin {
 			<?php endif; ?>
 
 			<details class="pf-panel pf-panel--quiet pf-import-json">
-				<summary><?php esc_html_e( 'Import a content type from another site', 'postful' ); ?></summary>
+				<summary><?php esc_html_e( 'Copy the setup from another site', 'postful' ); ?></summary>
 				<form method="post" action="<?php echo esc_url( $post ); ?>" enctype="multipart/form-data" class="pf-import-json-form">
 					<input type="hidden" name="action" value="postful_import_type">
 					<?php wp_nonce_field( 'postful_import_type' ); ?>
@@ -216,6 +214,9 @@ final class Admin {
 		$editing = (bool) $existing;
 		$preset  = Presets::get( 'recurring_day' );
 		$config  = $existing ?: wp_parse_args( [
+			'plural'      => __( 'Devotionals', 'postful' ),
+			'singular'    => __( 'Devotional', 'postful' ),
+			'key'         => 'devotional',
 			'preset'      => $preset->id(),
 			'languages'   => [ 'en_US', 'fr_CA' ],
 			'fields'      => $preset->default_fields(),
@@ -239,13 +240,13 @@ final class Admin {
 		<div class="wrap pf-wrap pf-wrap--wizard">
 			<header class="pf-page-head">
 				<div>
-					<p class="pf-eyebrow"><a href="<?php echo esc_url( admin_url( 'admin.php?page=postful' ) ); ?>"><?php esc_html_e( 'Content types', 'postful' ); ?></a></p>
+					<p class="pf-eyebrow"><a href="<?php echo esc_url( admin_url( 'admin.php?page=postful' ) ); ?>"><?php esc_html_e( 'Setup', 'postful' ); ?></a></p>
 					<h1 class="pf-title">
 						<?php
 						echo $editing
 							/* translators: %s: content type plural name */
 							? esc_html( sprintf( __( 'Edit %s', 'postful' ), $existing['plural'] ) )
-							: esc_html__( 'New content type', 'postful' );
+							: esc_html__( 'Set up devotionals', 'postful' );
 						?>
 					</h1>
 				</div>
@@ -272,7 +273,7 @@ final class Admin {
 				?></script>
 
 				<ol class="pf-stepper" data-pf-stepper>
-					<?php foreach ( [ __( 'Name', 'postful' ), __( 'Structure', 'postful' ), __( 'Languages', 'postful' ), __( 'Fields', 'postful' ), __( 'Style', 'postful' ) ] as $i => $label ) : ?>
+					<?php foreach ( [ __( 'Name', 'postful' ), __( 'Languages', 'postful' ), __( 'Fields', 'postful' ), __( 'Style', 'postful' ) ] as $i => $label ) : ?>
 						<li><button type="button" data-pf-goto="<?php echo (int) $i + 1; ?>"><span class="pf-stepper-num"><?php echo (int) $i + 1; ?></span><?php echo esc_html( $label ); ?></button></li>
 					<?php endforeach; ?>
 				</ol>
@@ -314,47 +315,11 @@ final class Admin {
 					</details>
 				</section>
 
-				<!-- 2. Structure -->
-				<section class="pf-step" data-pf-step="2">
-					<h2 class="pf-step-title"><?php esc_html_e( 'How are entries organised?', 'postful' ); ?></h2>
-					<p class="pf-step-sub"><?php esc_html_e( 'This decides what identifies an entry, how they are listed, and which one visitors see first.', 'postful' ); ?></p>
-					<div class="pf-presets">
-						<?php foreach ( Presets::all() as $p ) : ?>
-							<?php $disabled = ! $p->available() || ( $editing && $p->id() !== $config['preset'] ); ?>
-							<label class="pf-preset<?php echo $disabled ? ' is-disabled' : ''; ?>">
-								<input type="radio" name="preset" value="<?php echo esc_attr( $p->id() ); ?>" <?php checked( $config['preset'], $p->id() ); ?> <?php disabled( $disabled ); ?>>
-								<span class="pf-preset-art"><?php echo $p->diagram(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG ?></span>
-								<span class="pf-preset-text">
-									<span class="pf-preset-name">
-										<?php echo esc_html( $p->label() ); ?>
-										<?php if ( ! $p->available() ) : ?><span class="pf-tag"><?php esc_html_e( 'Coming soon', 'postful' ); ?></span><?php endif; ?>
-									</span>
-									<span class="pf-preset-desc"><?php echo esc_html( $p->description() ); ?></span>
-									<span class="pf-preset-for"><?php echo esc_html( $p->good_for() ); ?></span>
-								</span>
-							</label>
-						<?php endforeach; ?>
-					</div>
-					<?php if ( $editing ) : ?>
-						<p class="pf-form-help"><?php esc_html_e( 'The structure can’t be changed after creation, because entries are keyed by it.', 'postful' ); ?></p>
-					<?php endif; ?>
-					<details class="pf-advanced">
-						<summary><?php esc_html_e( 'Advanced', 'postful' ); ?></summary>
-						<label class="pf-setting">
-							<span class="pf-setting-text">
-								<span class="pf-setting-label"><?php esc_html_e( 'Give each entry its own URL', 'postful' ); ?></span>
-								<span class="pf-setting-help"><?php esc_html_e( 'Off for Recurring day: everything is read on one page whose address never changes, so a daily email can always link to the same URL.', 'postful' ); ?></span>
-							</span>
-							<span class="pf-switch">
-								<input type="checkbox" name="public_urls" value="1" <?php checked( $config['public_urls'] ); ?>>
-								<span class="pf-switch-track" aria-hidden="true"></span>
-							</span>
-						</label>
-					</details>
-				</section>
+				<?php // Devotionals only: every entry is keyed by month and day. ?>
+				<input type="hidden" name="preset" value="recurring_day">
 
-				<!-- 3. Languages -->
-				<section class="pf-step" data-pf-step="3">
+				<!-- 2. Languages -->
+				<section class="pf-step" data-pf-step="2">
 					<h2 class="pf-step-title"><?php esc_html_e( 'Which languages will you write in?', 'postful' ); ?></h2>
 					<p class="pf-step-sub"><?php esc_html_e( 'Each entry holds every language. Visitors see the one your site (or GTranslate) is showing.', 'postful' ); ?></p>
 					<div class="pf-lang-grid" data-pf-langs>
@@ -382,8 +347,8 @@ final class Admin {
 					</details>
 				</section>
 
-				<!-- 4. Fields -->
-				<section class="pf-step" data-pf-step="4">
+				<!-- 3. Fields -->
+				<section class="pf-step" data-pf-step="3">
 					<h2 class="pf-step-title"><?php esc_html_e( 'What does each entry contain?', 'postful' ); ?></h2>
 					<p class="pf-step-sub"><?php esc_html_e( 'Name each part of an entry. The first field is the title. Every field can be written in each language; an empty translation shows the default language instead.', 'postful' ); ?></p>
 					<ol class="pf-fields" data-pf-fields>
@@ -401,8 +366,8 @@ final class Admin {
 				</section>
 
 
-				<!-- 5. Style -->
-				<section class="pf-step" data-pf-step="5">
+				<!-- 4. Style -->
+				<section class="pf-step" data-pf-step="4">
 					<h2 class="pf-step-title"><?php esc_html_e( 'How should it look?', 'postful' ); ?></h2>
 					<p class="pf-step-sub"><?php esc_html_e( 'The entry reads in the main column; previous / today / next and the month list sit in the sidebar. Style each part below. Anything left empty uses your theme’s look.', 'postful' ); ?></p>
 					<?php // One layout for now (like AWMI). The engine supports more; they come back later. ?>
@@ -475,7 +440,7 @@ final class Admin {
 					<span class="pf-wizard-error" data-pf-error role="alert"></span>
 					<button type="button" class="pf-btn pf-btn--primary" data-pf-next><?php esc_html_e( 'Continue', 'postful' ); ?></button>
 					<button type="submit" class="pf-btn pf-btn--primary" data-pf-submit>
-						<?php echo $editing ? esc_html__( 'Save changes', 'postful' ) : esc_html__( 'Create content type', 'postful' ); ?>
+						<?php echo $editing ? esc_html__( 'Save changes', 'postful' ) : esc_html__( 'Save setup', 'postful' ); ?>
 					</button>
 				</footer>
 			</form>
@@ -551,7 +516,7 @@ final class Admin {
 					</a>
 					<a class="pf-btn pf-btn--ghost" href="<?php echo esc_url( Importer::url( $key ) ); ?>"><?php esc_html_e( 'Import from a spreadsheet', 'postful' ); ?></a>
 				</div>
-				<p class="pf-done-foot"><a href="<?php echo esc_url( admin_url( 'admin.php?page=postful' ) ); ?>"><?php esc_html_e( 'Back to content types', 'postful' ); ?></a></p>
+				<p class="pf-done-foot"><a href="<?php echo esc_url( admin_url( 'admin.php?page=postful' ) ); ?>"><?php esc_html_e( 'Back to setup', 'postful' ); ?></a></p>
 			</div>
 		</div>
 		<?php
@@ -574,7 +539,7 @@ final class Admin {
 			// Keep everything they typed so the fix is one edit, not a redo.
 			set_transient( 'postful_wizard_' . get_current_user_id(), self::draft( $input ), MINUTE_IN_SECONDS );
 			// Reopen the wizard on the step that needs fixing.
-			$steps = [ 'name' => 1, 'key' => 1, 'preset' => 2, 'languages' => 3, 'field_key' => 4, 'fields' => 4 ];
+			$steps = [ 'name' => 1, 'key' => 1, 'preset' => 1, 'languages' => 2, 'field_key' => 3, 'fields' => 3 ];
 			$step  = $steps[ $config->get_error_code() ] ?? 1;
 			wp_safe_redirect( admin_url( 'admin.php?page=postful-type&pf_step=' . $step . ( $existing ? '&type=' . $existing['key'] : '' ) ) );
 			exit;
@@ -649,7 +614,7 @@ final class Admin {
 		self::guard( 'postful_export_type_' . $key );
 		$type = Types::get( $key );
 		if ( ! $type ) {
-			wp_die( esc_html__( 'Unknown content type.', 'postful' ) );
+			wp_die( esc_html__( 'Unknown devotional setup.', 'postful' ) );
 		}
 		nocache_headers();
 		header( 'Content-Type: application/json; charset=utf-8' );
@@ -668,7 +633,7 @@ final class Admin {
 			$data = json_decode( (string) file_get_contents( $file['tmp_name'] ), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 			$raw  = $data['type'] ?? null;
 			if ( ! is_array( $raw ) ) {
-				throw new \RuntimeException( __( 'That file isn’t a Postful content type export.', 'postful' ) );
+				throw new \RuntimeException( __( 'That file isn’t a Postful setup export.', 'postful' ) );
 			}
 			// Same validation as the wizard. Locale list comes back as `languages`.
 			$raw['default_locale'] = Types::locales( wp_parse_args( $raw, Types::defaults() ) )[ $raw['default_lang'] ?? '' ] ?? '';

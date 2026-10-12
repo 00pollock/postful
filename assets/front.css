@@ -18,50 +18,57 @@
 }
 .postful a { color: var(--pf-focus-c); }
 
-/* ---- Layouts ------------------------------------------------------------ */
+/* ---- Layout ------------------------------------------------------------
+ * [postful] fills whatever container it is placed in (no wide/full breakout).
+ * Two rows so the title row and Previous / Today / Next share one line:
+ *   [ title · date ][ links      ]
+ *   [ devotional   ][ month list ]
+ */
 
-.postful-layout { max-width: var(--pf-width, none); margin: 0 auto 2em; }
-
-.postful-layout.pf-layout--sidebar-right,
-.postful-layout.pf-layout--sidebar-left {
+.postful-layout {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) var(--pf-aside-width, 280px);
-	gap: var(--pf-gap, 48px);
+	grid-template-areas: "head nav" "body index";
+	column-gap: var(--pf-gap, 48px);
+	row-gap: 1.4em;
 	align-items: start;
+	box-sizing: border-box;
+	width: 100%;
+	max-width: var(--pf-width, 100%);
+	margin: 0 0 2em;
 }
-.postful-layout.pf-layout--sidebar-left { grid-template-columns: var(--pf-aside-width, 280px) minmax(0, 1fr); }
-.postful-layout.pf-layout--sidebar-left .pf-layout-aside { order: -1; }
+.postful-layout .pf-area-head { grid-area: head; align-self: center; min-width: 0; }
+.postful-layout .pf-area-nav { grid-area: nav; align-self: center; }
+.postful-layout .pf-area-body { grid-area: body; min-width: 0; }
+.postful-layout .pf-area-index { grid-area: index; }
+.postful-layout .pf-area-head .pf-entry-head { margin: 0; }
 
-.postful-layout .pf-layout-aside > *,
-.postful-layout .pf-layout-main > * { margin-top: 0; margin-bottom: 0; }
-.postful-layout .pf-layout-aside > * + *,
-.postful-layout .pf-layout-main > * + * { margin-top: 1.8em; }
-
-@media (max-width: 760px) {
-	.postful-layout.pf-layout--sidebar-right,
-	.postful-layout.pf-layout--sidebar-left { grid-template-columns: minmax(0, 1fr); }
-	.postful-layout.pf-layout--sidebar-left .pf-layout-aside { order: 0; }
+/* Stack when the container (not the screen) is narrow: title, devotional, links, month list. */
+.postful-wrap { container-type: inline-size; width: 100%; }
+@container (max-width: 680px) {
+	.postful-layout {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-areas: "head" "body" "nav" "index";
+	}
 }
-
-.pf-layout--stacked > * + *,
-.pf-layout--entry-only > * + * { margin-top: 1.6em; }
 
 /* ---- Entry -------------------------------------------------------------- */
 
 .pf-current { transition: opacity .2s ease; }
 .pf-current.is-loading { opacity: .45; }
 
-/* Title on the left, the entry's day on the right (wraps under on narrow screens). */
+/* Title on the left, the day on the right, centred on one line (wraps on narrow screens). */
 .pf-entry .pf-entry-head {
 	display: flex;
 	flex-wrap: wrap;
-	align-items: baseline;
+	align-items: center;
 	justify-content: space-between;
 	gap: .2em 1.5em;
 	margin: 0 0 1.2em;
 }
 .pf-entry .pf-entry-title {
-	flex: 1 1 14em;
+	flex: 1 1 0;
+	min-width: 10em;
 	margin: 0;
 	font-size: clamp(1.6em, 3.4vw, 2.1em);
 	font-weight: 600;

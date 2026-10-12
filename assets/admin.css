@@ -898,3 +898,14 @@ body.pf-admin { background: var(--pf-bg); }
 .pf-wrap .pf-style-field select.pf-text { padding-right: 24px; }
 .pf-color input[type="color"] { width: 30px; height: 30px; }
 @media (max-width: 900px) { .pf-style-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---- Import: language choice, column matching, preview ------------------- */
+
+.pf-inline-choice--block { margin: 0 0 16px; }
+.pf-panel-subtitle { margin: 22px 0 6px; font-size: 14px; font-weight: 600; color: var(--pf-ink); }
+.pf-small { font-size: 12px; }
+.pf-result-head { margin: 0 0 12px; font-size: 14px; color: var(--pf-ink-2); }
+.pf-match-table td { vertical-align: middle; }
+.pf-wrap .pf-match-table select.pf-text { max-width: 320px; min-height: 34px; }
+.pf-preview-table td:first-child { white-space: nowrap; }
+.pf-table .pf-num { width: auto; white-space: nowrap; }

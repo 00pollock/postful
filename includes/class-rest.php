@@ -35,7 +35,7 @@ final class Rest {
 					'type'    => 'integer',
 					'minimum' => 0,
 				],
-				// The page splits sidebar fields into their own container.
+				// The page shows the title row and the body separately ([postful] layout).
 				'split' => [
 					'type'    => 'boolean',
 					'default' => false,
@@ -69,14 +69,15 @@ final class Rest {
 				$id = Index::find( $type['key'], $sort );
 			}
 
+			$render   = fn( $part ) => $id ? Renderer::entry( $type, $id, $part ) : Renderer::empty_state( $type, $key, 'empty', $part );
 			$split    = (bool) $request['split'];
 			$response = rest_ensure_response( [
-				'sort'  => $sort,
-				'id'    => $id,
-				'html'  => $id ? Renderer::entry( $type, $id, $split ? 'main' : 'all' ) : Renderer::empty_state( $type, $key ),
-				'aside' => $id && $split ? Renderer::entry( $type, $id, 'aside' ) : '',
-				// For a standalone [sp_current] sharing the page with a split layout.
-				'all'   => $id && $split ? Renderer::entry( $type, $id, 'all' ) : '',
+				'sort' => $sort,
+				'id'   => $id,
+				'html' => $render( 'all' ),
+				// The [postful] layout shows the title row and the body in separate places.
+				'head' => $split ? $render( 'head' ) : '',
+				'body' => $split ? $render( 'body' ) : '',
 			] );
 			$response->header( 'Cache-Control', 'public, max-age=60' );
 			return $response;

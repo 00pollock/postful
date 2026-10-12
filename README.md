@@ -22,14 +22,24 @@ Go to **Postful → Add content type**. The wizard has five steps:
 
 Entries are managed under the Postful menu.
 
-### 2. Add entries
+### 2. Add devotionals
 
-You can write entries one at a time from **Postful → Devotionals → Add New**. For a year of content, use **Import / export**, linked at the top of the entries list:
+You can write devotionals one at a time from **Postful → Devotionals → Add New**. For a whole year, use **Import / export**, linked at the top of the devotionals list.
 
-- **Template.** Download it to get the exact column names, such as `month,day,heading_en,heading_fr,…`.
-- **Matching.** Rows are matched by month + day, so you can re-import as often as you like.
-- **Empty cells.** These never overwrite existing content. Import English first and French later.
-- **Delimiters.** Semicolon-separated files from French Excel work as well as comma-separated ones.
+Import works with your Excel workbooks as they are: **one workbook per language, one sheet per month, a header row** (Date, Title, Scripture of the day, Reference, Text) and **one row per day**.
+
+1. Choose the file and say which language it is in.
+2. Match the columns to your fields. They're matched automatically by name, and your choices are remembered for the next file.
+3. Check the preview, then import.
+
+How importing behaves:
+- **Dates.** Dates like "1er janvier", "2 janvier", "January 1", "Jan 1" or a real Excel date all work. If a sheet only has day numbers, the sheet name (Jan, Feb…) gives the month.
+- **Matching by date.** Rows are matched to devotionals by date, so the English and French files fill the same devotionals, in any order. Importing a file again just updates.
+- **Empty cells never overwrite.**
+- **Formatting.** Paragraphs, bold and italic in the Text column are kept.
+- **Problems.** A row that can't be read (for example an unreadable date) is listed with its sheet and row number; the rest still import.
+
+**Export** downloads the same shape: one workbook per language, a sheet per month. There's also an empty template.
 
 ### 3. Translations
 

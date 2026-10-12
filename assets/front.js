@@ -173,12 +173,12 @@
 	function swap( targets, res, scroll ) {
 		targets.forEach( function ( t ) {
 			var part = t.getAttribute( 'data-pf-part' );
-			t.innerHTML = part === 'aside' ? ( res.aside || '' ) : ( part === 'main' ? res.html : ( res.all || res.html ) );
+			t.innerHTML = part && res[ part ] !== undefined ? res[ part ] : res.html;
 			t.classList.remove( 'is-loading' );
 			t.removeAttribute( 'aria-busy' );
 		} );
 		applyLanguage();
-		var main = targets.filter( function ( t ) { return t.getAttribute( 'data-pf-part' ) !== 'aside'; } )[ 0 ];
+		var main = targets.filter( function ( t ) { return t.getAttribute( 'data-pf-part' ) !== 'body'; } )[ 0 ];
 		if ( scroll && main ) {
 			var rect = main.getBoundingClientRect();
 			if ( rect.top < 0 || rect.top > window.innerHeight * 0.6 ) {
@@ -230,10 +230,26 @@
 			} )
 			.catch( function () {
 				if ( req === state.req ) {
-					swap( targets, { html: errorHtml( state ), aside: '' }, ! auto );
+					swap( targets, { html: errorHtml( state ), head: '', body: errorHtml( state ) }, ! auto );
 				}
 			} );
 	}
+
+	// One month open at a time (also for browsers without <details name>).
+	document.addEventListener( 'toggle', function ( e ) {
+		var month = e.target;
+		if ( ! month.open || ! month.classList || ! month.classList.contains( 'pf-month' ) ) {
+			return;
+		}
+		var index = month.closest( '.pf-index' );
+		if ( index ) {
+			index.querySelectorAll( 'details.pf-month[open]' ).forEach( function ( other ) {
+				if ( other !== month ) {
+					other.open = false;
+				}
+			} );
+		}
+	}, true );
 
 	document.addEventListener( 'click', function ( e ) {
 		var root = e.target.closest( '.postful[data-pf-type]' );

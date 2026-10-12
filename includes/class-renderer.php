@@ -35,48 +35,48 @@ final class Renderer {
 	}
 
 	/**
-	 * @param string $part 'all', or 'main' / 'aside' when a sidebar layout splits
-	 *                     the entry (fields placed in the sidebar go to 'aside').
+	 * @param string $part 'all'; or, when the layout puts the title row beside the
+	 *                     navigation, 'head' (title + date) and 'body' (the fields).
 	 */
 	public static function entry( array $type, int $post_id, string $part = 'all' ): string {
 		$preset  = Presets::get( $type['preset'] );
 		$key     = $preset->key_of( $post_id );
 		$locales = Types::locales( $type );
-		$filled  = false;
 
-		$out = sprintf( '<article class="pf-entry%s" data-pf-id="%d" data-pf-sort="%d">', 'aside' === $part ? ' pf-entry--aside' : '', $post_id, $key ? $preset->sort_of( $key ) : 0 );
+		$out = sprintf( '<article class="pf-entry pf-entry--%s" data-pf-id="%d" data-pf-sort="%d">', esc_attr( $part ), $post_id, $key ? $preset->sort_of( $key ) : 0 );
 		foreach ( Types::lang_codes( $type ) as $code ) {
 			$out .= self::lang_open( $type, $code );
 			if ( 'hide' === $type['fallback'] && ! self::complete( $type, $post_id, $code ) ) {
-				$out .= 'aside' === $part ? '' : self::message( $type, $code, 'empty', $key );
+				$out .= self::message( $type, $code, 'empty', $key, $part );
 			} else {
-				$body    = self::body( $type, $post_id, $code, $locales[ $code ] ?? $code, $key, $part );
-				$filled  = $filled || '' !== $body;
-				$out    .= $body;
+				$out .= self::body( $type, $post_id, $code, $locales[ $code ] ?? $code, $key, $part );
 			}
 			$out .= '</div>';
-		}
-		// An empty sidebar part renders nothing rather than an empty box.
-		return 'aside' === $part && ! $filled ? '' : $out . '</article>';
-	}
-
-	/** Placeholder article in every language — never a blank box. */
-	public static function empty_state( array $type, ?array $key, string $string_key = 'empty' ): string {
-		$preset = Presets::get( $type['preset'] );
-		$out    = sprintf( '<article class="pf-entry pf-entry--empty" data-pf-id="0" data-pf-sort="%d">', $key ? $preset->sort_of( $key ) : 0 );
-		foreach ( Types::lang_codes( $type ) as $code ) {
-			$out .= self::lang_open( $type, $code ) . self::message( $type, $code, $string_key, $key ) . '</div>';
 		}
 		return $out . '</article>';
 	}
 
-	private static function message( array $type, string $code, string $string_key, ?array $key ): string {
-		$out = '';
+	/** Placeholder in every language — never a blank box. */
+	public static function empty_state( array $type, ?array $key, string $string_key = 'empty', string $part = 'all' ): string {
+		$preset = Presets::get( $type['preset'] );
+		$out    = sprintf( '<article class="pf-entry pf-entry--empty pf-entry--%s" data-pf-id="0" data-pf-sort="%d">', esc_attr( $part ), $key ? $preset->sort_of( $key ) : 0 );
+		foreach ( Types::lang_codes( $type ) as $code ) {
+			$out .= self::lang_open( $type, $code ) . self::message( $type, $code, $string_key, $key, $part ) . '</div>';
+		}
+		return $out . '</article>';
+	}
+
+	private static function message( array $type, string $code, string $string_key, ?array $key, string $part = 'all' ): string {
+		$date = '';
 		if ( $key ) {
 			$locales = Types::locales( $type );
-			$out    .= '<p class="pf-date">' . esc_html( Presets::get( $type['preset'] )->key_label( $key, $code, $locales[ $code ] ?? $code ) ) . '</p>';
+			$date    = '<p class="pf-date">' . esc_html( Presets::get( $type['preset'] )->key_label( $key, $code, $locales[ $code ] ?? $code ) ) . '</p>';
 		}
-		return $out . '<p class="pf-message">' . esc_html( Languages::strings( $type, $code )[ $string_key ] ) . '</p>';
+		$text = '<p class="pf-message">' . esc_html( Languages::strings( $type, $code )[ $string_key ] ) . '</p>';
+		if ( 'head' === $part ) {
+			return $date ? '<header class="pf-entry-head">' . $date . '</header>' : '';
+		}
+		return 'body' === $part ? $text : $date . $text;
 	}
 
 	/**
@@ -104,9 +104,9 @@ final class Renderer {
 			$parts[ $field['key'] ] = [ $field, $html ];
 		}
 
-		// A custom template controls the whole entry, so nothing is split out.
+		// A custom template controls the whole entry; it goes in the body part.
 		if ( '' !== trim( $type['template'] ) ) {
-			if ( 'aside' === $part ) {
+			if ( 'head' === $part ) {
 				return '';
 			}
 			$map = [ '{date}' => $date ];
@@ -116,27 +116,22 @@ final class Renderer {
 			return strtr( $type['template'], $map );
 		}
 
-		$in_part = function ( array $field ) use ( $part ): bool {
-			$aside = 'sidebar' === ( $field['region'] ?? 'main' );
-			return 'all' === $part || ( 'aside' === $part ) === $aside;
-		};
-
-		// Header: the title, then the entry's day beneath it.
+		// Header: the title, with the day beside it.
 		$head = '';
-		if ( 'aside' === $part ) {
-			$title = null;
-			$date  = '';
-		}
 		if ( $title && '' !== $parts[ $title['key'] ][1] ) {
 			$head .= sprintf( '<h2 class="pf-entry-title sp-field-%s"%s>%s</h2>', esc_attr( $title['key'] ), self::style_attr( $type, $title['key'] ), $parts[ $title['key'] ][1] );
 		}
 		if ( $date ) {
 			$head .= '<p class="pf-date">' . $date . '</p>';
 		}
-		$out = $head ? '<header class="pf-entry-head">' . $head . '</header>' : '';
+		$head = $head ? '<header class="pf-entry-head">' . $head . '</header>' : '';
+		if ( 'head' === $part ) {
+			return $head;
+		}
+		$out = 'body' === $part ? '' : $head;
 
 		foreach ( $parts as $fkey => [ $field, $html ] ) {
-			if ( 'toggle' === $field['type'] || '' === $html || ( $title && $fkey === $title['key'] ) || ! $in_part( $field ) ) {
+			if ( 'toggle' === $field['type'] || '' === $html || ( $title && $fkey === $title['key'] ) ) {
 				continue;
 			}
 			$out .= sprintf(

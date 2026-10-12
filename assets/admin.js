@@ -143,6 +143,7 @@
 	var reached = 1;
 
 	function show( n ) {
+		n = Math.min( steps.length, Math.max( 1, n ) );
 		current = n;
 		reached = Math.max( reached, n );
 		steps.forEach( function ( s, i ) {
@@ -180,11 +181,11 @@
 			if ( ! p.value.trim() ) {
 				msg = i18n.needName;
 			}
-		} else if ( n === 3 ) {
+		} else if ( n === 2 ) {
 			if ( ! wizard.querySelector( '[data-pf-langs] input:checked' ) ) {
 				msg = i18n.needLanguage;
 			}
-		} else if ( n === 4 ) {
+		} else if ( n === 3 ) {
 			var any = Array.prototype.some.call( wizard.querySelectorAll( '[data-pf-field-label]' ), function ( el ) {
 				return el.value.trim();
 			} );
@@ -245,7 +246,7 @@
 		}
 	} );
 	wizard.addEventListener( 'change', function () {
-		if ( current === 3 && wizard.querySelector( '[data-pf-langs] input:checked' ) ) {
+		if ( current === 2 && wizard.querySelector( '[data-pf-langs] input:checked' ) ) {
 			errorEl.textContent = '';
 		}
 	} );
@@ -570,18 +571,19 @@
 				: esc( f.label ) + ': sample text';
 			return '<div class="pf-field" style="' + esc( fieldCss( f.key ) ) + '">' + text + '</div>';
 		} ).join( '' );
-		var entry = '<div class="postful pf-current"><article class="pf-entry"><div class="pf-lang">' + head + body + '</div></article></div>';
+		var headPart = '<div class="postful pf-current"><article class="pf-entry"><div class="pf-lang">' + head + '</div></article></div>';
+		var bodyPart = '<div class="postful pf-current"><article class="pf-entry"><div class="pf-lang">' + body + '</div></article></div>';
 		var nav = '<nav class="postful pf-nav"><button class="pf-nav-btn">Previous</button><button class="pf-nav-btn">Today</button><button class="pf-nav-btn">Next</button></nav>';
 		var index = '<div class="postful pf-index"><h2 class="pf-index-title">Browse by month</h2>' + [ 'September', 'October', 'November' ].map( function ( m ) {
 			var open = m === 'October';
 			var days = open ? '<ol class="pf-days">' + [ 9, 10, 11 ].map( function ( d ) {
 				return '<li><button class="pf-day' + ( d === 10 ? ' is-current' : '' ) + '"><span class="pf-day-num">' + d + '</span><span class="pf-day-text">' + esc( title ? title.label : 'Entry' ) + ' ' + d + '</span></button></li>';
 			} ).join( '' ) + '</ol>' : '';
-			return '<details class="pf-month"' + ( open ? ' open' : '' ) + '><summary><span class="pf-month-name">' + m + '</span><span class="pf-month-count">' + ( open ? 3 : 30 ) + '</span></summary>' + days + '</details>';
+			return '<details class="pf-month"' + ( open ? ' open' : '' ) + '><summary><span class="pf-month-name">' + m + '</span></summary>' + days + '</details>';
 		} ).join( '' ) + '</div>';
 		return '<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="' + frame.getAttribute( 'data-css' ) + '">' +
 			'<style>body{margin:20px;font:15px/1.6 Georgia,"Times New Roman",serif;color:#1f2328;background:#fff}h2{font-family:system-ui,sans-serif}</style></head><body>' +
-			'<div class="postful-layout pf-layout--sidebar-right" style="' + esc( pageVars() ) + '"><div class="pf-layout-main">' + entry + '</div><aside class="pf-layout-aside">' + nav + index + '</aside></div></body></html>';
+			'<div class="postful-layout" style="' + esc( pageVars() ) + '"><div class="pf-area-head">' + headPart + '</div><div class="pf-area-nav">' + nav + '</div><div class="pf-area-body">' + bodyPart + '</div><div class="pf-area-index">' + index + '</div></div></body></html>';
 	}
 
 	function renderPreview() {

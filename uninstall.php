@@ -30,7 +30,18 @@ foreach ( $postful_orphans as $postful_id ) {
 	wp_delete_post( (int) $postful_id, true );
 }
 
-foreach ( [ 'postful_types', 'postful_settings', 'postful_version', 'postful_flush_rewrites' ] as $postful_option ) {
+// Temporary upload files from the import screen.
+$postful_tmp = trailingslashit( wp_upload_dir()['basedir'] ) . 'postful-tmp';
+if ( is_dir( $postful_tmp ) ) {
+	foreach ( array_merge( (array) glob( $postful_tmp . '/*.json' ), [ $postful_tmp . '/index.php', $postful_tmp . '/.htaccess' ] ) as $postful_file ) {
+		if ( is_file( $postful_file ) ) {
+			wp_delete_file( $postful_file );
+		}
+	}
+	@rmdir( $postful_tmp ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_rmdir
+}
+
+foreach ( [ 'postful_types', 'postful_settings', 'postful_version', 'postful_flush_rewrites', 'postful_import_map' ] as $postful_option ) {
 	delete_option( $postful_option );
 }
 
