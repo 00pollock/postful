@@ -22,7 +22,6 @@ final class Plugin {
 			Editor::hooks();
 			List_Screen::hooks();
 			Importer::hooks();
-			Translator::hooks();
 		}
 	}
 
@@ -32,10 +31,25 @@ final class Plugin {
 	 */
 	public static function maybe_flush_rewrites(): void {
 		if ( get_option( 'postful_version' ) !== POSTFUL_VERSION || get_option( 'postful_flush_rewrites' ) ) {
+			self::upgrade();
 			flush_rewrite_rules();
 			update_option( 'postful_version', POSTFUL_VERSION );
 			delete_option( 'postful_flush_rewrites' );
 		}
+	}
+
+	/** One-time tidy-ups when a new version is installed. */
+	private static function upgrade(): void {
+		// 0.4.0 removed machine translation: drop its review markers, stored key and cache.
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE %s", $wpdb->esc_like( '_pf__mt_' ) . '%' ) );
+		$settings = get_option( 'postful_settings' );
+		if ( is_array( $settings ) && isset( $settings['deepl_key'] ) ) {
+			unset( $settings['deepl_key'] );
+			update_option( 'postful_settings', $settings );
+		}
+		delete_transient( 'postful_deepl_usage' );
 	}
 
 	/**

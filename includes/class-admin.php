@@ -56,10 +56,6 @@ final class Admin {
 				'fileChosen'    => __( 'Ready to import: %s', 'postful' ),
 				'main'          => __( 'Main', 'postful' ),
 				'sidebar'       => __( 'Sidebar', 'postful' ),
-				/* translators: 1: entries done, 2: total */
-				'bulkProgress'  => __( '%1$d of %2$d translated…', 'postful' ),
-				'bulkDone'      => __( 'Done. The drafts are marked “Needs review” in the list and stay hidden from visitors until reviewed.', 'postful' ),
-				'bulkStuck'     => __( 'Stopped: some entries could not be translated. Check them in the editor.', 'postful' ),
 			],
 		] );
 	}

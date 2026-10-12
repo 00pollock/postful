@@ -75,59 +75,6 @@
 		} );
 	} );
 
-	/* ---- Bulk translation drafts ---------------------------------------- */
-
-	document.querySelectorAll( '[data-pf-bulk]' ).forEach( function ( box ) {
-		var btn = box.querySelector( '[data-pf-bulk-go]' );
-		var bar = box.querySelector( '[data-pf-bar]' );
-		var status = box.querySelector( '[data-pf-status]' );
-		var total = parseInt( box.getAttribute( 'data-total' ), 10 ) || 0;
-
-		btn.addEventListener( 'click', function () {
-			var last = Infinity;
-			var skip = [];
-			btn.disabled = true;
-			bar.parentNode.hidden = false;
-			status.classList.remove( 'is-error' );
-
-			var step = function () {
-				var body = new FormData();
-				body.append( 'action', 'postful_translate_batch' );
-				body.append( '_wpnonce', box.getAttribute( 'data-nonce' ) );
-				body.append( 'type', box.getAttribute( 'data-type' ) );
-				body.append( 'lang', box.getAttribute( 'data-lang' ) );
-				skip.forEach( function ( id ) { body.append( 'skip[]', id ); } );
-				fetch( window.ajaxurl, { method: 'POST', credentials: 'same-origin', body: body } )
-					.then( function ( r ) { return r.json(); } )
-					.then( function ( json ) {
-						if ( ! json || ! json.success ) {
-							throw new Error( json && json.data && json.data.message ? json.data.message : 'Error' );
-						}
-						// Entries that didn't fully translate are skipped next time, not re-billed.
-						skip = skip.concat( json.data.failed || [] );
-						var left = json.data.remaining;
-						var done = Math.max( 0, total - left );
-						bar.style.width = ( total ? Math.round( done / total * 100 ) : 100 ) + '%';
-						status.textContent = ( i18n.bulkProgress || '%1$d of %2$d' ).replace( '%1$d', done ).replace( '%2$d', total );
-						// Stop if a batch made no progress, so a stuck entry can't loop forever.
-						if ( left > 0 && left < last && json.data.done > 0 ) {
-							last = left;
-							step();
-						} else {
-							status.textContent = skip.length ? ( i18n.bulkStuck || '' ) : ( i18n.bulkDone || '' );
-							btn.disabled = ! skip.length;
-						}
-					} )
-					.catch( function ( err ) {
-						status.textContent = err.message;
-						status.classList.add( 'is-error' );
-						btn.disabled = false;
-					} );
-			};
-			step();
-		} );
-	} );
-
 	/* ---- Wizard ---------------------------------------------------------- */
 
 	var wizard = document.querySelector( '[data-pf-wizard]' );

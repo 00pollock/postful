@@ -467,10 +467,6 @@ final class Importer {
 				$code = ! empty( $fields[ $fkey ]['translatable'] ) ? $lang : null;
 				update_post_meta( $post_id, Fields::meta_key( $fkey, $code ), wp_slash( $value ) );
 			}
-			// Imported text is human-provided: it replaces any machine draft in those fields.
-			if ( $lang !== $type['default_lang'] ) {
-				Translator::clear_machine( $post_id, $lang, array_keys( $meta ) );
-			}
 		}
 		wp_defer_term_counting( false );
 		Index::flush( $type['key'] );
@@ -575,71 +571,6 @@ final class Importer {
 		exit;
 	}
 
-	/** Bulk machine drafts for empty translations. */
-	private static function translate_panel( array $type ): void {
-		$locales = Types::locales( $type );
-		$others  = array_filter( Types::lang_codes( $type ), fn( $c ) => $c !== $type['default_lang'] );
-		if ( ! $others || ! Translator::machine_fields( $type ) ) {
-			return;
-		}
-		$source = Languages::name( $locales[ $type['default_lang'] ] );
-		?>
-		<div class="pf-panel pf-translate-panel">
-			<h2 class="pf-panel-title"><?php esc_html_e( 'Translation drafts', 'postful' ); ?></h2>
-			<?php if ( ! Translator::enabled() ) : ?>
-				<p class="pf-muted">
-					<?php
-					printf(
-						/* translators: %s: link to settings */
-						esc_html__( 'Add a DeepL API key in %s to fill missing translations automatically. Drafts stay hidden from visitors until reviewed.', 'postful' ),
-						'<a href="' . esc_url( admin_url( 'admin.php?page=postful-settings' ) ) . '">' . esc_html__( 'Postful → Settings', 'postful' ) . '</a>'
-					);
-					?>
-				</p>
-			<?php else : ?>
-				<p class="pf-muted"><?php esc_html_e( 'Fills only empty text fields. Nothing a person wrote is overwritten. Every draft is marked “Needs review” and stays hidden from visitors until someone marks it reviewed.', 'postful' ); ?></p>
-				<?php foreach ( $others as $code ) : ?>
-					<?php
-					$name = Languages::name( $locales[ $code ] );
-					if ( ! Translator::can_translate( $type, $code ) ) {
-						/* translators: %s: language name */
-						echo '<p class="pf-muted">' . esc_html( sprintf( __( 'DeepL can’t translate into %s.', 'postful' ), $name ) ) . '</p>';
-						continue;
-					}
-					$pending = Translator::pending( $type, $code );
-					?>
-					<div class="pf-bulk" data-pf-bulk data-type="<?php echo esc_attr( $type['key'] ); ?>" data-lang="<?php echo esc_attr( $code ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce( 'postful_translate_batch_' . $type['key'] ) ); ?>" data-total="<?php echo (int) count( $pending['ids'] ); ?>">
-						<div class="pf-bulk-text">
-							<strong>
-								<?php
-								/* translators: 1: number of entries, 2: language name */
-								echo esc_html( sprintf( _n( '%1$d entry is missing %2$s', '%1$d entries are missing %2$s', count( $pending['ids'] ), 'postful' ), count( $pending['ids'] ), $name ) );
-								?>
-							</strong>
-							<?php if ( $pending['chars'] ) : ?>
-								<span class="pf-muted">
-									<?php
-									/* translators: %s: number of characters */
-									echo esc_html( sprintf( __( 'About %s characters of your DeepL allowance.', 'postful' ), number_format_i18n( $pending['chars'] ) ) );
-									?>
-								</span>
-							<?php endif; ?>
-							<div class="pf-progress" hidden><span class="pf-progress-bar" data-pf-bar></span></div>
-							<span class="pf-bulk-status" data-pf-status role="status"></span>
-						</div>
-						<button type="button" class="pf-btn pf-btn--soft" data-pf-bulk-go <?php disabled( ! $pending['ids'] ); ?>>
-							<?php
-							/* translators: 1: target language, 2: source language */
-							echo esc_html( sprintf( __( 'Translate into %1$s from %2$s', 'postful' ), $name, $source ) );
-							?>
-						</button>
-					</div>
-				<?php endforeach; ?>
-			<?php endif; ?>
-		</div>
-		<?php
-	}
-
 	public static function page( string $key ): void {
 		$type = Types::get( $key );
 		if ( ! $type || ! current_user_can( 'edit_others_posts' ) ) {
@@ -727,7 +658,6 @@ final class Importer {
 				</div>
 			</div>
 
-			<?php self::translate_panel( $type ); ?>
 		</div>
 		<?php
 	}

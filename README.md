@@ -43,11 +43,7 @@ How importing behaves:
 
 ### 3. Translations
 
-You can type translations yourself, or add a DeepL API key under **Postful → Settings** to get help. The free plan allows 500,000 characters a month.
-
-- **In the content screen,** each French field has a **Translate** link, and the French column has **Translate empty fields**. The text that arrives is ordinary editable text: change it as you like, and it goes live when you save.
-- **In bulk,** the Import / export page can fill every missing French field. Bulk translations are marked **Needs review** and stay hidden from visitors (they see English) until someone edits the entry, ticks **Reviewed**, or uses the bulk action "Mark Français (Canada) as reviewed".
-- **Nothing is sent automatically.** Text only goes to DeepL when someone clicks Translate.
+French is your own text: type it in the French column, or import your French workbook. An empty French field shows the English instead. Postful never machine-translates and never sends text anywhere.
 
 ### 4. Build the page
 

@@ -4,7 +4,7 @@ Tags: devotional, multilingual, custom post type, daily, bilingual
 Requires at least: 6.3
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 0.3.1
+Stable tag: 0.4.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,7 +20,6 @@ Postful lets you create a content type (for example "Devotionals") with its own 
 * Follows the language your site is already showing (GTranslate, browser language). It never sets a language itself.
 * Excel import and export in your workbook's shape (one file per language, a sheet per month), re-runnable.
 * A clean reading layout (entry plus sidebar with the month list) and per-field styling with live preview.
-* Optional DeepL translation drafts that stay hidden from visitors until reviewed.
 
 More structures (dated entries, sequences, evergreen pages, events) are coming.
 
@@ -45,6 +44,9 @@ If a page cache serves an old copy, Postful fixes the entry in the visitor's bro
 No. Entries are only deleted if you switch on Postful → Settings → "Delete data on uninstall" and then delete the plugin.
 
 == Changelog ==
+
+= 0.4.0 =
+* Removed machine translation (DeepL): no Translate buttons, no API key setting, nothing sent to outside services. French comes from your own text or your French workbook.
 
 = 0.3.1 =
 * The address follows the day shown (?mn=10&dn=10, like awmi.net), so links in emails open on their day. Today is the plain address; Back / Forward step through days.

@@ -3,7 +3,7 @@
  * Plugin Name:       Postful
  * Plugin URI:        https://github.com/00pollock/postful
  * Description:       Structured, multilingual content types — daily devotionals, sequences, events — with hand-written translations side by side.
- * Version:           0.3.1
+ * Version:           0.4.0
  * Requires at least: 6.3
  * Requires PHP:      8.1
  * Author:            George Okanga
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'POSTFUL_VERSION', '0.3.1' );
+define( 'POSTFUL_VERSION', '0.4.0' );
 define( 'POSTFUL_FILE', __FILE__ );
 define( 'POSTFUL_DIR', plugin_dir_path( __FILE__ ) );
 define( 'POSTFUL_URL', plugin_dir_url( __FILE__ ) );

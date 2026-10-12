@@ -27,8 +27,6 @@ final class List_Screen {
 		add_filter( 'disable_months_dropdown', '__return_true' ); // Publish dates aren't the key.
 		add_filter( "views_edit-{$pt}", [ self::class, 'views' ] );
 		add_filter( "bulk_actions-edit-{$pt}", [ self::class, 'bulk_actions' ] );
-		add_filter( "handle_bulk_actions-edit-{$pt}", [ self::class, 'handle_bulk' ], 10, 3 );
-		add_action( 'admin_notices', [ self::class, 'bulk_notice' ] );
 		add_action( 'admin_enqueue_scripts', fn() => wp_enqueue_style( 'postful-admin', POSTFUL_URL . 'assets/admin.css', [], Plugin::ver( 'admin.css' ) ) );
 	}
 
@@ -65,11 +63,7 @@ final class List_Screen {
 		}
 		if ( str_starts_with( $col, 'pf_lang_' ) ) {
 			$code = substr( $col, 8 );
-			if ( Translator::needs_review( $post_id, $code ) ) {
-				echo '<span class="pf-pill pf-pill--review" title="' . esc_attr__( 'Machine draft, hidden from visitors until reviewed', 'postful' ) . '">' . esc_html__( 'Needs review', 'postful' ) . '</span>';
-				return;
-			}
-			$complete = Renderer::complete( $type, $post_id, $code, false );
+			$complete = Renderer::complete( $type, $post_id, $code );
 			printf(
 				'<span class="pf-pill pf-pill--%s">%s</span>',
 				$complete ? 'ok' : 'todo',
@@ -151,41 +145,8 @@ final class List_Screen {
 	}
 
 	public static function bulk_actions( array $actions ): array {
-		$type    = self::type();
-		$locales = Types::locales( $type );
 		unset( $actions['edit'] ); // Bulk edit can't touch per-language fields.
-		foreach ( Types::lang_codes( $type ) as $code ) {
-			if ( $code !== $type['default_lang'] ) {
-				/* translators: %s: language name */
-				$actions[ 'pf_reviewed_' . $code ] = sprintf( __( 'Mark %s as reviewed', 'postful' ), Languages::name( $locales[ $code ] ) );
-			}
-		}
 		return $actions;
-	}
-
-	/** Core already checked the bulk nonce; we still check per-post capability. */
-	public static function handle_bulk( string $redirect, string $action, array $ids ): string {
-		if ( ! str_starts_with( $action, 'pf_reviewed_' ) ) {
-			return $redirect;
-		}
-		$code = sanitize_key( substr( $action, 12 ) );
-		$done = 0;
-		foreach ( $ids as $id ) {
-			if ( current_user_can( 'edit_post', $id ) && Translator::needs_review( (int) $id, $code ) ) {
-				Translator::clear_machine( (int) $id, $code );
-				++$done;
-			}
-		}
-		Index::flush( get_post_type( (int) ( $ids[0] ?? 0 ) ) ?: '' );
-		return add_query_arg( 'pf_reviewed', $done, $redirect );
-	}
-
-	public static function bulk_notice(): void {
-		if ( isset( $_GET['pf_reviewed'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$n = absint( $_GET['pf_reviewed'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			/* translators: %d: number of entries */
-			printf( '<div class="notice notice-success is-dismissible"><p>%s</p></div>', esc_html( sprintf( _n( '%d entry marked as reviewed. Its translation is now visible to visitors.', '%d entries marked as reviewed. Their translations are now visible to visitors.', $n, 'postful' ), $n ) ) );
-		}
 	}
 
 	public static function row_actions( array $actions, \WP_Post $post ): array {

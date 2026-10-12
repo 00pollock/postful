@@ -101,18 +101,7 @@ final class Editor {
 		wp_localize_script( 'postful-editor', 'postfulEditor', [
 			'taken'     => $taken,
 			'months'    => array_values( $wp_locale->month ),
-			'ajax'      => admin_url( 'admin-ajax.php' ),
-			'postId'    => $post ? $post->ID : 0,
-			'nonce'     => $post ? wp_create_nonce( 'postful_translate_' . $post->ID ) : '',
-			'defLang'   => $type['default_lang'],
-			'machine'   => array_column( Translator::machine_fields( $type ), 'key' ),
 			'i18n'      => [
-				'translating' => __( 'Translating…', 'postful' ),
-				/* translators: %d: number of fields */
-				'filled'      => __( 'Translated %d field(s). Check the wording, then save.', 'postful' ),
-				'replace'     => __( 'Replace the text already in this field with a new translation?', 'postful' ),
-				'nothing'     => __( 'Nothing to translate: the fields are already filled, or the source is empty.', 'postful' ),
-				'failed'      => __( 'Translation failed.', 'postful' ),
 				/* translators: %s: title of the other entry */
 				'dup'         => __( 'Another entry already uses this day: “%s”. Only one will be shown.', 'postful' ),
 				'monthDay'    => _x( '%1$s %2$d', 'month name, day number', 'postful' ),
@@ -198,30 +187,6 @@ final class Editor {
 									<span class="pf-lang-tag"><?php esc_html_e( 'Default', 'postful' ); ?></span>
 								<?php endif; ?>
 								<span class="pf-lang-progress" data-pf-progress></span>
-								<?php if ( Translator::supports( $type, $code ) ) : ?>
-									<button type="button" class="pf-btn pf-btn--soft pf-btn--sm" data-pf-translate="<?php echo esc_attr( $code ); ?>" <?php disabled( ! Translator::enabled() ); ?>>
-										<?php esc_html_e( 'Translate empty fields', 'postful' ); ?>
-									</button>
-									<?php if ( ! Translator::enabled() ) : ?>
-										<span class="pf-lang-hint">
-											<?php
-											printf(
-												/* translators: %s: link to Postful settings */
-												esc_html__( 'Type the translation below, or add a DeepL key in %s to translate automatically.', 'postful' ),
-												'<a href="' . esc_url( admin_url( 'admin.php?page=postful-settings' ) ) . '">' . esc_html__( 'Settings', 'postful' ) . '</a>'
-											);
-											?>
-										</span>
-									<?php endif; ?>
-								<?php endif; ?>
-								<?php if ( $code !== $type['default_lang'] ) : ?>
-									<?php $pending = Translator::needs_review( $post->ID, $code ); ?>
-									<div class="pf-review" data-pf-review="<?php echo esc_attr( $code ); ?>" <?php echo $pending ? '' : 'hidden'; ?>>
-										<input type="hidden" name="pf_review[<?php echo esc_attr( $code ); ?>]" value="" data-pf-review-flag>
-										<span class="pf-review-text"><?php esc_html_e( 'Some fields were machine-translated in bulk. Visitors see the default language for those until you’ve checked them.', 'postful' ); ?></span>
-										<label class="pf-review-check"><input type="checkbox" name="pf_reviewed[<?php echo esc_attr( $code ); ?>]" value="1"> <?php esc_html_e( 'Reviewed', 'postful' ); ?></label>
-									</div>
-								<?php endif; ?>
 							</div>
 						<?php endif; ?>
 						<?php
@@ -254,9 +219,6 @@ final class Editor {
 				<?php echo esc_html( $field['label'] ); ?>
 				<?php if ( $field['required'] ) : ?><span class="pf-req" aria-label="<?php esc_attr_e( 'required', 'postful' ); ?>">•</span><?php endif; ?>
 			<?php echo $labelled ? '</label>' : '</span>'; ?>
-			<?php if ( $code && $code !== $type['default_lang'] && in_array( $field['key'], array_column( Translator::machine_fields( $type ), 'key' ), true ) && Translator::supports( $type, $code ) && Translator::enabled() ) : ?>
-				<button type="button" class="pf-text-btn pf-cell-translate" data-pf-translate-field="<?php echo esc_attr( $field['key'] ); ?>" data-pf-lang="<?php echo esc_attr( $code ); ?>"><?php esc_html_e( 'Translate', 'postful' ); ?></button>
-			<?php endif; ?>
 			<?php
 			Fields::render_input( $field, $value, [
 				'id'        => $id,
@@ -301,12 +263,6 @@ final class Editor {
 			foreach ( $codes as $code ) {
 				$value    = Fields::sanitize( $field, $input[ $field['key'] ][ $code ?? '_' ] ?? '' );
 				$meta_key = Fields::meta_key( $field['key'], $code );
-				// A person changed a bulk machine draft: that counts as reviewing it.
-				// Compare the words, not the markup: the rich-text editor reformats HTML on its own.
-				$words = fn( $v ) => trim( preg_replace( '/\s+/u', ' ', html_entity_decode( wp_strip_all_tags( (string) $v ), ENT_QUOTES ) ) );
-				if ( $code && Translator::is_machine( $post_id, $code, $field['key'] ) && $words( $value ) !== $words( get_post_meta( $post_id, $meta_key, true ) ) ) {
-					Translator::clear_machine( $post_id, $code, [ $field['key'] ] );
-				}
 				if ( Fields::is_empty( $field, $value ) ) {
 					delete_post_meta( $post_id, $meta_key );
 				} else {
@@ -314,25 +270,6 @@ final class Editor {
 				}
 			}
 		}
-		// Machine-draft review state per language. Ticking "Reviewed" wins.
-		$review   = isset( $_POST['pf_review'] ) && is_array( $_POST['pf_review'] ) ? wp_unslash( $_POST['pf_review'] ) : []; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- reduced to known field keys below
-		$reviewed = isset( $_POST['pf_reviewed'] ) && is_array( $_POST['pf_reviewed'] ) ? wp_unslash( $_POST['pf_reviewed'] ) : []; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- compared to '1' only
-		foreach ( Types::lang_codes( $type ) as $code ) {
-			if ( $code === $type['default_lang'] ) {
-				continue;
-			}
-			if ( '1' === ( $reviewed[ $code ] ?? '' ) ) {
-				Translator::clear_machine( $post_id, $code );
-			} else {
-				// Comma-separated keys of fields the Translate button just filled.
-				$keys = array_intersect(
-					array_map( 'sanitize_key', explode( ',', (string) ( $review[ $code ] ?? '' ) ) ),
-					array_column( Translator::machine_fields( $type ), 'key' )
-				);
-				Translator::add_machine( $post_id, $code, $keys );
-			}
-		}
-
 		Index::flush( $type['key'] );
 	}
 

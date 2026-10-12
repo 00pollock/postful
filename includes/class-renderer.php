@@ -79,14 +79,10 @@ final class Renderer {
 		return 'body' === $part ? $text : $date . $text;
 	}
 
-	/**
-	 * Value shown to visitors. A machine draft awaiting review counts as empty,
-	 * then the default language fills the gap per field (fallback "field").
-	 */
+	/** Value shown to visitors: an empty translation falls back to the default language. */
 	public static function display_value( array $type, int $post_id, array $field, string $code ): string {
-		$translated = ! empty( $field['translatable'] ) && $code !== $type['default_lang'];
-		$value      = $translated && Translator::is_machine( $post_id, $code, $field['key'] ) ? '' : Fields::value( $post_id, $field, $code );
-		if ( $translated && 'field' === $type['fallback'] && Fields::is_empty( $field, $value ) ) {
+		$value = Fields::value( $post_id, $field, $code );
+		if ( ! empty( $field['translatable'] ) && $code !== $type['default_lang'] && 'field' === $type['fallback'] && Fields::is_empty( $field, $value ) ) {
 			$value = Fields::value( $post_id, $field, $type['default_lang'] );
 		}
 		return $value;
@@ -155,17 +151,16 @@ final class Renderer {
 	 * A translation is complete when every translated field that has content in
 	 * the default language also has content in this one.
 	 */
-	public static function complete( array $type, int $post_id, string $code, bool $for_visitors = true ): bool {
+	public static function complete( array $type, int $post_id, string $code ): bool {
 		if ( $code === $type['default_lang'] ) {
 			return true;
 		}
-		$machine = $for_visitors ? Translator::machine_keys( $post_id, $code ) : [];
 		foreach ( $type['fields'] as $field ) {
 			if ( empty( $field['translatable'] ) ) {
 				continue;
 			}
 			$default = Fields::value( $post_id, $field, $type['default_lang'] );
-			$value = in_array( $field['key'], $machine, true ) ? '' : Fields::value( $post_id, $field, $code );
+			$value = Fields::value( $post_id, $field, $code );
 			if ( ! Fields::is_empty( $field, $default ) && Fields::is_empty( $field, $value ) ) {
 				return false;
 			}

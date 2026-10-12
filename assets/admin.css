@@ -771,25 +771,7 @@ body.pf-admin { background: var(--pf-bg); }
 .pf-done-parts { max-width: 520px; margin: 18px auto 0; text-align: left; }
 .pf-done-parts .pf-shortcodes { margin-top: 10px; }
 
-.pf-translate-panel .pf-muted { margin: 0 0 14px; font-size: 13px; }
-.pf-bulk {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 18px;
-	padding: 14px 16px;
-	border-radius: var(--pf-radius-sm);
-	background: var(--pf-tint);
-}
-.pf-bulk + .pf-bulk { margin-top: 8px; }
-.pf-bulk-text { display: grid; gap: 3px; flex: 1; font-size: 13.5px; }
-.pf-bulk-text .pf-muted { margin: 0; font-size: 12.5px; }
-.pf-bulk-status { font-size: 12.5px; color: var(--pf-ink-2); }
-.pf-bulk-status.is-error { color: var(--pf-danger); }
-.pf-progress { height: 6px; margin: 6px 0 2px; overflow: hidden; border-radius: 999px; background: var(--pf-line); }
-.pf-progress-bar { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--pf-accent); transition: width .3s; }
 
-.pf-pill--review { background: var(--pf-info-soft); color: var(--pf-info); }
 
 .pf-toast {
 	position: fixed;

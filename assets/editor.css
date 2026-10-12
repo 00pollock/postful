@@ -313,35 +313,10 @@
 	.pf-canvas input.pf-input--title { font-size: 18px; }
 }
 
-/* ---- Translation drafts ------------------------------------------------- */
-
-.pf-lang-head .pf-btn--sm { height: 28px; }
-.pf-review {
-	display: flex;
-	flex-basis: 100%;
-	align-items: center;
-	gap: 12px;
-	padding: 8px 12px;
-	border-radius: var(--pf-radius-sm);
-	background: var(--pf-info-soft);
-	color: var(--pf-info);
-	font-size: 12.5px;
-	line-height: 1.4;
-}
-.pf-review-text { flex: 1; }
-.pf-review-check { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; white-space: nowrap; cursor: pointer; }
-.pf-review-check input { margin: 0 !important; }
 
 .pf-entry-screen input[type="checkbox"]:checked { border-color: var(--pf-accent); background-color: var(--pf-accent); }
 
 /* Headers share a grid row; keep content top-aligned when one is taller. */
 .pf-lang-head { align-content: flex-start; }
 
-/* ---- Translate controls -------------------------------------------------- */
-
 .pf-cell { position: relative; }
-.pf-cell-translate { position: absolute; top: 8px; right: 0; padding: 2px 6px; font-size: 12px; color: var(--pf-accent-ink); }
-.pf-cell--richtext .pf-cell-translate { right: 110px; }
-.pf-lang-hint { flex-basis: 100%; color: var(--pf-muted); font-size: 12px; line-height: 1.4; }
-.pf-lang-hint a { color: var(--pf-accent-ink); }
-.pf-lang-head .pf-btn:disabled { opacity: .5; cursor: default; }
