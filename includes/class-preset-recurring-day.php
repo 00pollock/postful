@@ -116,6 +116,18 @@ final class Preset_Recurring_Day extends Preset {
 		return Languages::day_label( $key['month'], $key['day'], $code, $locale );
 	}
 
+	/**
+	 * A day asked for in the address (?mn=10&dn=10, as on awmi.net), so a link in
+	 * an email opens on that day whenever it is read. Null when absent or invalid.
+	 */
+	public function requested_sort(): ?int {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only, public
+		$m = isset( $_GET['mn'] ) ? absint( $_GET['mn'] ) : 0;
+		$d = isset( $_GET['dn'] ) ? absint( $_GET['dn'] ) : 0;
+		// phpcs:enable
+		return self::valid( $m, $d ) ? $m * 100 + $d : null;
+	}
+
 	/** Today in the site timezone. */
 	public function current_sort(): ?int {
 		return (int) wp_date( 'n' ) * 100 + (int) wp_date( 'j' );

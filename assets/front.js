@@ -6,7 +6,8 @@
  * reveals the matching copy. Never writes cookies, storage or URLs.
  *
  * Navigation: index and previous/next swap the current entry in place via
- * REST. The address bar never changes, so a refresh returns to today.
+ * REST, and the address follows the day shown (?mn=10&dn=10, as on awmi.net)
+ * so a link — e.g. in an email — opens on that day. Today is the plain address.
  */
 ( function () {
 	'use strict';
@@ -251,6 +252,32 @@
 		}
 	}, true );
 
+	/* ---- Address: ?mn=&dn= for a specific day, plain for today ----------- */
+
+	function sortFromUrl() {
+		var p = new URLSearchParams( window.location.search );
+		var m = parseInt( p.get( 'mn' ), 10 );
+		var d = parseInt( p.get( 'dn' ), 10 );
+		return m >= 1 && m <= 12 && d >= 1 && d <= 31 ? m * 100 + d : null;
+	}
+
+	function setUrl( sort, isToday ) {
+		if ( ! window.history || ! window.URL ) {
+			return;
+		}
+		var url = new URL( window.location.href );
+		if ( isToday ) {
+			url.searchParams.delete( 'mn' );
+			url.searchParams.delete( 'dn' );
+		} else {
+			url.searchParams.set( 'mn', String( Math.floor( sort / 100 ) ) );
+			url.searchParams.set( 'dn', String( sort % 100 ) );
+		}
+		if ( url.href !== window.location.href ) {
+			window.history.pushState( { pfSort: sort }, '', url.href );
+		}
+	}
+
 	document.addEventListener( 'click', function ( e ) {
 		var root = e.target.closest( '.postful[data-pf-type]' );
 		if ( ! root ) {
@@ -260,16 +287,27 @@
 		if ( ! state ) {
 			return;
 		}
+		var target = null;
 		var nav = e.target.closest( '[data-pf-go]' );
+		var day = e.target.closest( '.pf-day[data-pf-sort]' );
 		if ( nav ) {
 			var dir = nav.getAttribute( 'data-pf-go' );
-			go( state, dir === 'today' ? state.today : neighbour( state, dir === 'next' ? 1 : -1 ) );
-			return;
+			target = dir === 'today' ? state.today : neighbour( state, dir === 'next' ? 1 : -1 );
+		} else if ( day ) {
+			target = parseInt( day.getAttribute( 'data-pf-sort' ), 10 );
 		}
-		var day = e.target.closest( '.pf-day[data-pf-sort]' );
-		if ( day ) {
-			go( state, parseInt( day.getAttribute( 'data-pf-sort' ), 10 ) );
+		if ( target ) {
+			go( state, target );
+			setUrl( target, nav && nav.getAttribute( 'data-pf-go' ) === 'today' );
 		}
+	} );
+
+	// Back / Forward: show the day in the address (or today when there is none).
+	window.addEventListener( 'popstate', function () {
+		var sort = sortFromUrl();
+		Object.keys( states ).forEach( function ( type ) {
+			go( states[ type ], sort || states[ type ].today, true );
+		} );
 	} );
 
 	/* ---- Boot ------------------------------------------------------------ */
@@ -295,7 +333,7 @@
 
 			// A cached page may have been rendered yesterday: fix it quietly.
 			var today = siteToday( d.tz );
-			if ( today && today !== d.today ) {
+			if ( today && today !== d.today && ! d.linked ) {
 				state.today = today;
 				go( state, today, true );
 			}

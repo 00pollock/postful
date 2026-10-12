@@ -126,6 +126,8 @@ final class Shortcodes {
 			'def'      => $type['default_lang'],
 			'entries'  => Index::get( $type['key'] ),
 			'today'    => Presets::get( $type['preset'] )->current_sort(),
+			// The page was opened on a specific day (?mn=&dn=): don't jump to today.
+			'linked'   => null !== Presets::get( $type['preset'] )->requested_sort(),
 			'tz'       => wp_timezone_string(),
 			'siteLang' => Languages::code( get_locale() ),
 			'override' => (bool) Settings::get( 'lang_override' ),
@@ -170,7 +172,7 @@ final class Shortcodes {
 		}
 		$part   = in_array( $atts['part'] ?? '', [ 'head', 'body' ], true ) ? $atts['part'] : 'all';
 		$preset = Presets::get( $type['preset'] );
-		$sort   = (int) $preset->current_sort();
+		$sort   = (int) ( $preset->requested_sort() ?? $preset->current_sort() );
 		$id     = Index::find( $type['key'], $sort );
 		$inner  = $id ? Renderer::entry( $type, $id, $part ) : Renderer::empty_state( $type, $preset->key_from_sort( $sort ), 'empty', $part );
 		// data-pf-part tells front.js which part of a split entry this container shows.
@@ -197,7 +199,7 @@ final class Shortcodes {
 
 	private static function month_list( array $type ): string {
 		$preset  = Presets::get( $type['preset'] );
-		$today   = (int) $preset->current_sort();
+		$today   = (int) ( $preset->requested_sort() ?? $preset->current_sort() ); // The day shown: linked or today.
 		$entries = Index::get( $type['key'] );
 		$locales = Types::locales( $type );
 		$title   = Types::title_field( $type );

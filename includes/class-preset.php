@@ -72,6 +72,11 @@ abstract class Preset {
 		return '';
 	}
 
+	/** Sort value of a day requested in the address, or null. */
+	public function requested_sort(): ?int {
+		return null;
+	}
+
 	/** Sort value of the current entry ("today"), or null. */
 	public function current_sort(): ?int {
 		return null;

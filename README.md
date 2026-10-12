@@ -59,7 +59,7 @@ Create one page, for example `/reading/daily-devotional/`, and add a single shor
 
 **What it shows.** The page follows the AWMI layout. The entry reads in the main column: title, date, then your fields. Previous / Today / Next and the month list sit in a sidebar, which moves below the entry on phones.
 
-**How navigation works.** Clicking swaps the entry in place, and the address bar never changes, so a daily email can always link to this one page. Refreshing returns to today.
+**How navigation works.** Clicking a day, Previous or Next swaps the devotional in place and updates the address to that day, for example `…/daily-devotional/?mn=10&dn=10` (month 10, day 10), the same pattern as awmi.net. Use these links in emails: they open on that day whenever they're read. Today is the plain address, and the browser's Back button steps back through the days viewed.
 
 **Placing the parts yourself.** If your theme already has a sidebar, put `[sp_current type="devotional"]` in the content and `[sp_index type="devotional"]` in the sidebar. The month list brings Previous / Today / Next along above it (add `nav="no"` to leave them out, and place `[sp_nav]` wherever you like).
 

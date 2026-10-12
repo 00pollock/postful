@@ -4,7 +4,7 @@ Tags: devotional, multilingual, custom post type, daily, bilingual
 Requires at least: 6.3
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 0.3.0
+Stable tag: 0.3.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -16,7 +16,7 @@ Postful lets you create a content type (for example "Devotionals") with its own 
 
 * **Recurring day** structure: one entry per calendar day, repeating every year. Visitors see today's.
 * Every language lives in the same entry and is edited side by side, field by field.
-* One page, one address: visitors browse by month or previous/next without the URL changing, so a daily email can always link to the same page.
+* One page: visitors browse by month or previous/next, and the address follows the day (?mn=10&dn=10) so a link in an email always opens on its day.
 * Follows the language your site is already showing (GTranslate, browser language). It never sets a language itself.
 * Excel import and export in your workbook's shape (one file per language, a sheet per month), re-runnable.
 * A clean reading layout (entry plus sidebar with the month list) and per-field styling with live preview.
@@ -45,6 +45,9 @@ If a page cache serves an old copy, Postful fixes the entry in the visitor's bro
 No. Entries are only deleted if you switch on Postful → Settings → "Delete data on uninstall" and then delete the plugin.
 
 == Changelog ==
+
+= 0.3.1 =
+* The address follows the day shown (?mn=10&dn=10, like awmi.net), so links in emails open on their day. Today is the plain address; Back / Forward step through days.
 
 = 0.3.0 =
 * Devotionals only: the setup starts with Title, Scripture of the day, Reference and Text; the Structure step and other presets are gone.
